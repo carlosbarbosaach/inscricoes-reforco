@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { adminDb } from "@/lib/firebase-admin";
+import { getAdminDb } from "@/lib/firebase-admin";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 
 export async function GET() {
@@ -18,6 +18,9 @@ export async function GET() {
         }
       );
     }
+
+    // Firebase só inicializa aqui
+    const adminDb = getAdminDb();
 
     const [
       horariosSnapshot,
