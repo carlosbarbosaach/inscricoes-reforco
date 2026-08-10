@@ -1,27 +1,61 @@
-import crypto from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
+import { cookies } from "next/headers";
 
-const COOKIE = "admin_session";
+const COOKIE_NAME = "admin_session";
 
-export function adminCookieName() { return COOKIE; }
-
-export function createAdminToken() {
-  const secret = process.env.ADMIN_SESSION_SECRET || "";
-  const payload = `admin:${Date.now()}`;
-  const sig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  return Buffer.from(`${payload}:${sig}`).toString("base64url");
+export function adminCookieName() {
+  return COOKIE_NAME;
 }
 
-export function validateAdminToken(token?: string) {
-  if (!token) return false;
+function getSecret() {
+  const secret = process.env.ADMIN_SESSION_SECRET;
+
+  if (!secret) {
+    throw new Error(
+      "ADMIN_SESSION_SECRET não está configurado."
+    );
+  }
+
+  return secret;
+}
+
+export function createAdminToken() {
+  const secret = getSecret();
+
+  return createHmac("sha256", secret)
+    .update("admin-authenticated")
+    .digest("hex");
+}
+
+export function validateAdminToken(token: string) {
   try {
-    const raw = Buffer.from(token, "base64url").toString("utf8");
-    const parts = raw.split(":");
-    const sig = parts.pop() || "";
-    const payload = parts.join(":");
-    const secret = process.env.ADMIN_SESSION_SECRET || "";
-    const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
-    const ts = Number(parts[1]);
-    return Date.now() - ts < 1000 * 60 * 60 * 12;
-  } catch { return false; }
+    const expected = createAdminToken();
+
+    const tokenBuffer = Buffer.from(token);
+    const expectedBuffer = Buffer.from(expected);
+
+    if (tokenBuffer.length !== expectedBuffer.length) {
+      return false;
+    }
+
+    return timingSafeEqual(
+      tokenBuffer,
+      expectedBuffer
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function isAdminAuthenticated() {
+  const cookieStore = await cookies();
+
+  const token =
+    cookieStore.get(COOKIE_NAME)?.value;
+
+  if (!token) {
+    return false;
+  }
+
+  return validateAdminToken(token);
 }
