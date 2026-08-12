@@ -109,7 +109,6 @@ export default function AdminApp() {
         j.horarios || [];
 
       setHorarios(novosHorarios);
-
       setInscricoes(
         j.inscricoes || []
       );
@@ -197,7 +196,7 @@ export default function AdminApp() {
       if (!r.ok) {
         setErro(
           data?.error ||
-            "Senha incorreta."
+          "Senha incorreta."
         );
         return;
       }
@@ -305,16 +304,16 @@ export default function AdminApp() {
     Math.max(
       0,
       totalVagas -
-        totalInscritos
+      totalInscritos
     );
 
   const ocupacao =
     totalVagas > 0
       ? Math.round(
-          (totalInscritos /
-            totalVagas) *
-            100
-        )
+        (totalInscritos /
+          totalVagas) *
+        100
+      )
       : 0;
 
   const inscritosPorTurma =
@@ -385,20 +384,20 @@ export default function AdminApp() {
             index
           ) => `
             <tr>
-              <td>${
-                index + 1
-              }</td>
-
               <td>
-                ${escapeHtml(
-                  aluno.nome
-                )}
+                ${index + 1}
               </td>
 
               <td>
                 ${escapeHtml(
-                  aluno.turma
-                )}
+            aluno.nome
+          )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+            aluno.turma
+          )}
               </td>
             </tr>
           `
@@ -432,15 +431,13 @@ export default function AdminApp() {
         </title>
 
         <style>
-
           @page {
             size: A4;
             margin: 15mm;
           }
 
           * {
-            box-sizing:
-              border-box;
+            box-sizing: border-box;
           }
 
           body {
@@ -467,32 +464,26 @@ export default function AdminApp() {
           }
 
           .cabecalho h2 {
-            margin:
-              6px 0 0;
+            margin: 6px 0 0;
 
             font-size: 16px;
             font-weight: 600;
           }
 
           .cabecalho p {
-            margin:
-              7px 0 0;
+            margin: 7px 0 0;
 
             font-size: 13px;
           }
 
           .total {
-            margin-bottom:
-              12px;
-
+            margin-bottom: 12px;
             font-size: 13px;
           }
 
           table {
             width: 100%;
-
-            border-collapse:
-              collapse;
+            border-collapse: collapse;
           }
 
           thead {
@@ -543,7 +534,6 @@ export default function AdminApp() {
             text-align:
               center;
           }
-
         </style>
       </head>
 
@@ -562,12 +552,12 @@ export default function AdminApp() {
 
           <p>
             ${escapeHtml(
-              atual.dia
-            )}
+      atual.dia
+    )}
             —
             ${escapeHtml(
-              atual.horario
-            )}
+      atual.horario
+    )}
           </p>
 
         </div>
@@ -575,24 +565,21 @@ export default function AdminApp() {
         <div class="total">
 
           <strong>
-            ${
-              listaCompleta.length
-            }
+            ${listaCompleta.length
+      }
           </strong>
 
-          aluno${
-            listaCompleta.length !==
-            1
-              ? "s"
-              : ""
-          }
+          aluno${listaCompleta.length !==
+        1
+        ? "s"
+        : ""
+      }
 
-          inscrito${
-            listaCompleta.length !==
-            1
-              ? "s"
-              : ""
-          }
+          inscrito${listaCompleta.length !==
+        1
+        ? "s"
+        : ""
+      }
 
         </div>
 
@@ -711,11 +698,13 @@ export default function AdminApp() {
               type="submit"
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#073763] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#052b4e]"
             >
+
               <ShieldCheck
                 size={17}
               />
 
               Entrar no painel
+
             </button>
 
             {erro && (
@@ -745,95 +734,125 @@ export default function AdminApp() {
       <section className="mx-auto w-full max-w-6xl">
 
         {/* CABEÇALHO */}
-        <header className="overflow-hidden rounded-[28px] bg-gradient-to-br from-[#073763] via-[#0a4a7d] to-[#0b5d96] px-6 py-7 text-white shadow-[0_20px_60px_rgba(7,55,99,0.22)] md:px-9 md:py-8">
+        <header className="relative overflow-hidden rounded-[30px] border border-blue-900/10 bg-[#073763] px-6 py-7 text-white shadow-[0_20px_50px_rgba(7,55,99,0.18)] md:px-8 md:py-8">
 
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          {/* ELEMENTOS DECORATIVOS */}
+          <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/5" />
 
-            <div>
+          <div className="pointer-events-none absolute -bottom-28 right-32 h-56 w-56 rounded-full bg-[#8ED7F2]/10" />
 
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold">
+          <div className="relative z-10 flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
 
-                <ShieldCheck
-                  size={14}
-                />
+            {/* ESQUERDA */}
+            <div className="max-w-2xl">
 
-                Administração
+              <div className="flex flex-wrap items-center gap-2">
 
-              </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white/90 backdrop-blur-sm">
+                  <ShieldCheck size={14} />
 
-              <h1 className="mt-4 text-3xl font-bold tracking-tight">
+                  Administração
+                </span>
+
+                <span className="inline-flex items-center gap-2 rounded-full bg-[#8ED7F2]/15 px-3.5 py-1.5 text-xs font-semibold text-[#c9efff]">
+                  <BookOpen size={14} />
+
+                  Matemática Básica
+                </span>
+
+              </div>
+
+              <h1 className="mt-5 text-3xl font-bold tracking-tight md:text-4xl">
                 Painel de inscrições
               </h1>
 
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70 md:text-base">
-                Acompanhe as vagas,
-                inscrições e a procura
-                pelas aulas de
-                Matemática Básica.
+              <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 md:text-base">
+                Visão geral das vagas, alunos inscritos e distribuição das inscrições por turma e horário.
               </p>
 
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            {/* DIREITA */}
+            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-end">
 
-              <button
-                type="button"
-                onClick={() =>
-                  carregar(true)
-                }
-                disabled={
-                  atualizando
-                }
-                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
-              >
+              {/* STATUS */}
+              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.07] px-4 py-3 backdrop-blur-sm">
 
-                <RefreshCw
-                  size={16}
-                  className={
-                    atualizando
-                      ? "animate-spin"
-                      : ""
-                  }
-                />
+                <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
 
-                Atualizar
+                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-[#073763]" />
 
-              </button>
+                  <RefreshCw
+                    size={18}
+                    className={atualizando ? "animate-spin" : ""}
+                  />
 
-              <button
-                type="button"
-                onClick={sair}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20"
-              >
+                </div>
 
-                <LogOut size={16} />
+                <div>
 
-                Sair
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">
+                    Status
+                  </span>
 
-              </button>
+                  <strong className="mt-0.5 block text-sm font-semibold text-white">
+                    Dados atualizados
+                  </strong>
+
+                  {ultimaAtualizacao && (
+                    <span className="mt-0.5 block text-xs text-white/50">
+                      Última atualização às{" "}
+                      {ultimaAtualizacao.toLocaleTimeString(
+                        "pt-BR",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </span>
+                  )}
+
+                </div>
+
+              </div>
+
+              {/* BOTÕES */}
+              <div className="flex gap-2">
+
+                <button
+                  type="button"
+                  onClick={() => carregar(true)}
+                  disabled={atualizando}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#073763] shadow-sm transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RefreshCw
+                    size={16}
+                    className={atualizando ? "animate-spin" : ""}
+                  />
+
+                  Atualizar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={sair}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 text-sm font-semibold text-white transition hover:bg-white/15"
+                >
+                  <LogOut size={16} />
+
+                  Sair
+                </button>
+
+              </div>
 
             </div>
 
           </div>
 
-          {ultimaAtualizacao && (
-            <div className="mt-5 text-xs text-white/50">
-              Atualizado às{" "}
-              {ultimaAtualizacao.toLocaleTimeString(
-                "pt-BR",
-                {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                }
-              )}
-            </div>
-          )}
-
         </header>
 
         {/* RESUMO */}
-        <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 
           <ResumoCard
             titulo="Total de vagas"
@@ -871,16 +890,10 @@ export default function AdminApp() {
             destaque="amber"
           />
 
-          <ResumoCard
-            titulo="Ocupação"
-            valor={`${ocupacao}%`}
-            descricao="Das vagas preenchidas"
-            icon={
-              <BarChart3
-                size={22}
-              />
-            }
-            destaque="purple"
+          <OcupacaoCard
+            percentual={ocupacao}
+            inscritos={totalInscritos}
+            vagas={totalVagas}
           />
 
         </section>
@@ -901,119 +914,147 @@ export default function AdminApp() {
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Comparativo dos
-                alunos inscritos em
-                cada turma.
+                Comparativo de participação entre as turmas.
               </p>
 
             </div>
 
-            {maiorTurma &&
-              maiorTurma.total >
-                0 && (
-                <div className="flex items-center gap-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
+            {maiorTurma && maiorTurma.total > 0 && (
+              <div className="flex items-center gap-3 rounded-2xl border border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3">
 
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <TrendingUp size={21} />
+                </div>
 
-                    <TrendingUp
-                      size={20}
+                <div>
+                  <span className="block text-xs font-semibold uppercase tracking-wide text-amber-700">
+                    Maior procura
+                  </span>
+
+                  <strong className="mt-0.5 block text-base text-amber-950">
+                    {maiorTurma.turma}
+                  </strong>
+
+                  <span className="text-xs text-amber-700">
+                    {maiorTurma.total}{" "}
+                    {maiorTurma.total === 1 ? "aluno" : "alunos"}
+                  </span>
+                </div>
+
+              </div>
+            )}
+
+          </div>
+
+          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+            {inscritosPorTurma.map((item, index) => {
+
+              const percentual =
+                maiorQuantidade > 0
+                  ? Math.round(
+                    (item.total / maiorQuantidade) * 100
+                  )
+                  : 0;
+
+              const cor =
+                index === 0
+                  ? "#073763"
+                  : percentual >= 75
+                    ? "#2563eb"
+                    : percentual >= 50
+                      ? "#0ea5e9"
+                      : "#64748b";
+
+              return (
+                <div
+                  key={item.turma}
+                  className="group rounded-3xl border border-slate-100 bg-slate-50/60 p-5 transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+                >
+
+                  {/* TOPO */}
+                  <div className="flex items-center justify-between">
+
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-xs font-bold text-slate-500 shadow-sm">
+                      {index + 1}
+                    </span>
+
+                    {index === 0 && item.total > 0 && (
+                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#073763]">
+                        Maior
+                      </span>
+                    )}
+
+                  </div>
+
+                  {/* CÍRCULO */}
+                  <div className="mt-5 flex justify-center">
+
+                    <div
+                      className="relative flex h-28 w-28 items-center justify-center rounded-full"
+                      style={{
+                        background: `conic-gradient(
+                  ${cor} 0%,
+                  ${cor} ${percentual}%,
+                  #e2e8f0 ${percentual}%,
+                  #e2e8f0 100%
+                )`,
+                      }}
+                    >
+
+                      <div className="flex h-[86px] w-[86px] flex-col items-center justify-center rounded-full bg-white shadow-inner">
+
+                        <strong
+                          className="text-2xl font-extrabold"
+                          style={{
+                            color: cor,
+                          }}
+                        >
+                          {percentual}%
+                        </strong>
+
+                        <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                          procura
+                        </span>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  {/* INFORMAÇÕES */}
+                  <div className="mt-5 text-center">
+
+                    <strong className="block text-base font-bold text-slate-900">
+                      {item.turma}
+                    </strong>
+
+                    <span className="mt-1 block text-sm text-slate-500">
+                      <strong className="font-bold text-[#073763]">
+                        {item.total}
+                      </strong>{" "}
+                      {item.total === 1 ? "aluno inscrito" : "alunos inscritos"}
+                    </span>
+
+                  </div>
+
+                  {/* BARRA INFERIOR */}
+                  <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-200">
+
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${percentual}%`,
+                        backgroundColor: cor,
+                      }}
                     />
 
                   </div>
 
-                  <div>
-
-                    <span className="block text-xs font-medium text-amber-700">
-                      Maior procura
-                    </span>
-
-                    <strong className="block text-base text-amber-900">
-                      {
-                        maiorTurma.turma
-                      }{" "}
-                      —{" "}
-                      {
-                        maiorTurma.total
-                      }{" "}
-                      alunos
-                    </strong>
-
-                  </div>
-
                 </div>
-              )}
-
-          </div>
-
-          <div className="mt-7 grid gap-4 md:grid-cols-2">
-
-            {inscritosPorTurma.map(
-              (
-                item,
-                index
-              ) => {
-                const percentual =
-                  maiorQuantidade >
-                  0
-                    ? Math.round(
-                        (item.total /
-                          maiorQuantidade) *
-                          100
-                      )
-                    : 0;
-
-                return (
-                  <div
-                    key={
-                      item.turma
-                    }
-                    className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4"
-                  >
-
-                    <div className="flex items-center justify-between gap-4">
-
-                      <div className="flex items-center gap-3">
-
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-xs font-bold text-slate-500 shadow-sm">
-                          {index + 1}
-                        </span>
-
-                        <strong className="text-sm text-slate-800">
-                          {
-                            item.turma
-                          }
-                        </strong>
-
-                      </div>
-
-                      <strong className="text-sm text-[#073763]">
-                        {
-                          item.total
-                        }{" "}
-                        aluno
-                        {item.total !==
-                        1
-                          ? "s"
-                          : ""}
-                      </strong>
-
-                    </div>
-
-                    <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-200">
-
-                      <div
-                        className="h-full rounded-full bg-[#073763] transition-all duration-500"
-                        style={{
-                          width: `${percentual}%`,
-                        }}
-                      />
-
-                    </div>
-
-                  </div>
-                );
-              }
-            )}
+              );
+            })}
 
           </div>
 
@@ -1022,150 +1063,213 @@ export default function AdminApp() {
         {/* HORÁRIOS */}
         <section className="mt-6">
 
-          <div className="mb-4">
+          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
 
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Horários
-            </span>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Horários
+              </span>
 
-            <h2 className="mt-1 text-xl font-bold text-slate-900">
-              Inscrições por dia
-            </h2>
+              <h2 className="mt-1 text-xl font-bold text-slate-900">
+                Inscrições por dia
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Acompanhe a ocupação e as vagas disponíveis em cada horário.
+              </p>
+            </div>
+
+            <div className="text-sm text-slate-400">
+              {horarios.length}{" "}
+              {horarios.length === 1 ? "horário disponível" : "horários disponíveis"}
+            </div>
 
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
 
-            {horarios.map(
-              (h) => {
-                const disponiveis =
-                  Math.max(
-                    0,
-                    h.limite -
-                      h.inscritos
-                  );
+            {horarios.map((h) => {
 
-                const selecionado =
-                  filtro === h.id;
+              const disponiveis = Math.max(
+                0,
+                h.limite - h.inscritos
+              );
 
-                const percentual =
-                  h.limite > 0
-                    ? Math.min(
-                        100,
-                        Math.round(
-                          (h.inscritos /
-                            h.limite) *
-                            100
-                        )
-                      )
-                    : 0;
+              const selecionado =
+                filtro === h.id;
 
-                return (
-                  <button
-                    key={h.id}
-                    type="button"
-                    onClick={() => {
-                      setFiltro(
-                        h.id
-                      );
-                      setBusca("");
-                    }}
-                    className={`rounded-2xl border-2 bg-white p-5 text-left shadow-sm transition-all duration-200 ${
-                      selecionado
-                        ? "border-[#073763] shadow-[0_10px_30px_rgba(7,55,99,0.12)]"
-                        : "border-transparent hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-md"
+              const percentual =
+                h.limite > 0
+                  ? Math.min(
+                    100,
+                    Math.round(
+                      (h.inscritos / h.limite) * 100
+                    )
+                  )
+                  : 0;
+
+              const status =
+                percentual >= 100
+                  ? {
+                    texto: "Lotado",
+                    badge:
+                      "bg-red-50 text-red-700 border-red-100",
+                  }
+                  : percentual >= 80
+                    ? {
+                      texto: "Poucas vagas",
+                      badge:
+                        "bg-amber-50 text-amber-700 border-amber-100",
+                    }
+                    : {
+                      texto: "Vagas disponíveis",
+                      badge:
+                        "bg-emerald-50 text-emerald-700 border-emerald-100",
+                    };
+
+              return (
+                <button
+                  key={h.id}
+                  type="button"
+                  onClick={() => {
+                    setFiltro(h.id);
+                    setBusca("");
+                  }}
+                  className={`group relative overflow-hidden rounded-3xl border bg-white p-5 text-left transition-all duration-200 ${selecionado
+                      ? "border-[#073763] shadow-[0_12px_35px_rgba(7,55,99,0.14)]"
+                      : "border-slate-100 shadow-sm hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-md"
                     }`}
-                  >
+                >
 
-                    <div className="flex items-start justify-between gap-4">
+                  {/* DETALHE LATERAL QUANDO SELECIONADO */}
+                  {selecionado && (
+                    <div className="absolute left-0 top-5 h-[calc(100%-40px)] w-1 rounded-r-full bg-[#073763]" />
+                  )}
 
-                      <div className="flex gap-3">
+                  <div className="flex items-center justify-between gap-5">
+
+                    {/* INFORMAÇÕES */}
+                    <div className="min-w-0 flex-1">
+
+                      <div className="flex items-start gap-3">
 
                         <div
-                          className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-                            selecionado
+                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition ${selecionado
                               ? "bg-[#073763] text-white"
                               : "bg-blue-50 text-[#073763]"
-                          }`}
+                            }`}
                         >
-
-                          <CalendarDays
-                            size={20}
-                          />
-
+                          <CalendarDays size={21} />
                         </div>
 
-                        <div>
+                        <div className="min-w-0">
 
-                          <strong className="block text-base text-slate-900">
-                            {
-                              h.dia
-                            }
-                          </strong>
+                          <div className="flex flex-wrap items-center gap-2">
+
+                            <strong className="text-base font-bold text-slate-900">
+                              {h.dia}
+                            </strong>
+
+                            {selecionado && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#073763]">
+                                <CheckCircle2 size={11} />
+                                Selecionado
+                              </span>
+                            )}
+
+                          </div>
 
                           <span className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
+                            <Clock3 size={14} />
 
-                            <Clock3
-                              size={14}
-                            />
-
-                            {
-                              h.horario
-                            }
-
+                            {h.horario}
                           </span>
 
                         </div>
 
                       </div>
 
-                      {selecionado && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-
-                          <CheckCircle2
-                            size={13}
-                          />
-
-                          Selecionado
-
+                      {/* STATUS */}
+                      <div className="mt-5">
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${status.badge}`}
+                        >
+                          {status.texto}
                         </span>
-                      )}
+                      </div>
 
-                    </div>
+                      {/* NÚMEROS */}
+                      <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3">
 
-                    <div className="mt-5 flex items-end justify-between">
+                        <div>
+                          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Inscritos
+                          </span>
 
-                      <div>
+                          <div className="mt-1 flex items-baseline gap-1">
+                            <strong className="text-2xl font-bold text-[#073763]">
+                              {h.inscritos}
+                            </strong>
 
-                        <strong className="text-2xl text-[#073763]">
-                          {
-                            h.inscritos
-                          }
-                          /
-                          {
-                            h.limite
-                          }
-                        </strong>
+                            <span className="text-sm text-slate-400">
+                              / {h.limite}
+                            </span>
+                          </div>
+                        </div>
 
-                        <span className="ml-2 text-xs text-slate-400">
-                          inscritos
-                        </span>
+                        <div>
+                          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Disponíveis
+                          </span>
+
+                          <strong
+                            className={`mt-1 block text-xl font-bold ${disponiveis === 0
+                                ? "text-red-600"
+                                : disponiveis <= 5
+                                  ? "text-amber-600"
+                                  : "text-emerald-600"
+                              }`}
+                          >
+                            {disponiveis}
+                          </strong>
+                        </div>
 
                       </div>
 
-                      <span className="text-sm font-semibold text-slate-500">
-                        {
-                          disponiveis
-                        }{" "}
-                        vagas
-                      </span>
+                    </div>
+
+                    {/* CÍRCULO */}
+                    <div className="shrink-0">
+
+                      <CirculoPercentual
+                        percentual={percentual}
+                        tamanho="pequeno"
+                      />
 
                     </div>
 
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                  </div>
+
+                  {/* BARRA INFERIOR */}
+                  <div className="mt-5">
+
+                    <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      <span>Ocupação</span>
+
+                      <span>
+                        {percentual}%
+                      </span>
+                    </div>
+
+                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
 
                       <div
-                        className="h-full rounded-full bg-[#073763]"
+                        className={`h-full rounded-full transition-all duration-500 ${percentual >= 100
+                            ? "bg-red-500"
+                            : percentual >= 80
+                              ? "bg-amber-500"
+                              : "bg-[#073763]"
+                          }`}
                         style={{
                           width: `${percentual}%`,
                         }}
@@ -1173,10 +1277,11 @@ export default function AdminApp() {
 
                     </div>
 
-                  </button>
-                );
-              }
-            )}
+                  </div>
+
+                </button>
+              );
+            })}
 
           </div>
 
@@ -1274,7 +1379,6 @@ export default function AdminApp() {
 
             </div>
 
-            {/* BUSCA */}
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
               <div className="relative w-full sm:max-w-sm">
@@ -1306,12 +1410,12 @@ export default function AdminApp() {
                 </strong>{" "}
                 aluno
                 {listaCompleta.length !==
-                1
+                  1
                   ? "s"
                   : ""}{" "}
                 inscrito
                 {listaCompleta.length !==
-                1
+                  1
                   ? "s"
                   : ""}
 
@@ -1326,7 +1430,9 @@ export default function AdminApp() {
 
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
 
-                <Users size={24} />
+                <Users
+                  size={24}
+                />
 
               </div>
 
@@ -1469,16 +1575,16 @@ export default function AdminApp() {
 type ResumoCardProps = {
   titulo: string;
   valor:
-    | number
-    | string;
+  | number
+  | string;
   descricao: string;
   icon:
-    React.ReactNode;
+  React.ReactNode;
   destaque:
-    | "blue"
-    | "green"
-    | "amber"
-    | "purple";
+  | "blue"
+  | "green"
+  | "amber"
+  | "purple";
 };
 
 function ResumoCard({
@@ -1553,5 +1659,119 @@ function ResumoCard({
       </p>
 
     </article>
+  );
+}
+
+function OcupacaoCard({
+  percentual,
+  inscritos,
+  vagas,
+}: {
+  percentual: number;
+  inscritos: number;
+  vagas: number;
+}) {
+  return (
+    <article className="flex min-h-[150px] items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+
+      <div>
+
+        <span className="text-sm font-medium text-slate-500">
+          Ocupação
+        </span>
+
+        <strong className="mt-2 block text-xl font-bold text-slate-900">
+          {inscritos} de {vagas}
+        </strong>
+
+        <p className="mt-1 text-xs text-slate-400">
+          Vagas preenchidas
+        </p>
+
+      </div>
+
+      <CirculoPercentual
+        percentual={
+          percentual
+        }
+        tamanho="medio"
+      />
+
+    </article>
+  );
+}
+
+function CirculoPercentual({
+  percentual,
+  tamanho = "medio",
+}: {
+  percentual: number;
+  tamanho?:
+  | "pequeno"
+  | "medio";
+}) {
+  const valor = Math.max(
+    0,
+    Math.min(
+      100,
+      percentual
+    )
+  );
+
+  const cor =
+    valor >= 90
+      ? "#dc2626"
+      : valor >= 70
+        ? "#f59e0b"
+        : "#16a34a";
+
+  const tamanhoExterno =
+    tamanho === "pequeno"
+      ? "h-24 w-24"
+      : "h-28 w-28";
+
+  const tamanhoInterno =
+    tamanho === "pequeno"
+      ? "h-[74px] w-[74px]"
+      : "h-[86px] w-[86px]";
+
+  const tamanhoTexto =
+    tamanho === "pequeno"
+      ? "text-xl"
+      : "text-2xl";
+
+  return (
+    <div
+      className={`relative flex shrink-0 items-center justify-center rounded-full ${tamanhoExterno}`}
+      style={{
+        background: `conic-gradient(
+          ${cor} 0%,
+          ${cor} ${valor}%,
+          #e2e8f0 ${valor}%,
+          #e2e8f0 100%
+        )`,
+      }}
+    >
+
+      <div
+        className={`flex flex-col items-center justify-center rounded-full bg-white shadow-inner ${tamanhoInterno}`}
+      >
+
+        <strong
+          className={`${tamanhoTexto} font-extrabold`}
+          style={{
+            color: cor,
+          }}
+        >
+          {valor}%
+        </strong>
+
+        <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+          ocupado
+        </span>
+
+      </div>
+
+    </div>
   );
 }
