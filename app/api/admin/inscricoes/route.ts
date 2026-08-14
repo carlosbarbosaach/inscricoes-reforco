@@ -6,9 +6,12 @@ import { isAdminAuthenticated } from "@/lib/admin-auth";
 type Inscricao = {
   id: string;
   horarioId: string;
-  nome?: string;
-  turma?: string;
+  nome: string;
+  turma: string;
 };
+
+export const dynamic =
+  "force-dynamic";
 
 export async function GET() {
   try {
@@ -18,7 +21,8 @@ export async function GET() {
     if (!autenticado) {
       return NextResponse.json(
         {
-          error: "Não autorizado.",
+          error:
+            "Não autorizado.",
         },
         {
           status: 401,
@@ -26,17 +30,12 @@ export async function GET() {
       );
     }
 
-    /*
-     * Firebase só inicializa
-     * depois de confirmar que
-     * o usuário está autenticado.
-     */
     const adminDb =
       getAdminDb();
 
     /*
      * Busca horários e inscrições
-     * apenas uma vez.
+     * uma única vez.
      */
     const [
       horariosSnapshot,
@@ -53,29 +52,37 @@ export async function GET() {
     ]);
 
     /*
-     * Inscrições reais.
+     * Monta a lista REAL de inscrições.
      */
     const inscricoes: Inscricao[] =
       inscricoesSnapshot.docs.map(
-        (doc) => ({
-          id: doc.id,
-          ...(doc.data() as Omit<
-            Inscricao,
-            "id"
-          >),
-        })
+        (doc) => {
+          const data =
+            doc.data();
+
+          return {
+            id: doc.id,
+
+            horarioId:
+              String(
+                data.horarioId || ""
+              ),
+
+            nome:
+              String(
+                data.nome || ""
+              ),
+
+            turma:
+              String(
+                data.turma || ""
+              ),
+          };
+        }
       );
 
     /*
-     * Conta quantos alunos
-     * existem em cada horário.
-     *
-     * Exemplo:
-     *
-     * {
-     *   terca: 29,
-     *   sexta: 23
-     * }
+     * Quantidade real por horário.
      */
     const inscritosPorHorario =
       inscricoes.reduce<
@@ -85,19 +92,18 @@ export async function GET() {
           acumulador,
           inscricao
         ) => {
-          const horarioId =
-            inscricao.horarioId;
-
-          if (!horarioId) {
+          if (
+            !inscricao.horarioId
+          ) {
             return acumulador;
           }
 
           acumulador[
-            horarioId
+            inscricao.horarioId
           ] =
             (
               acumulador[
-              horarioId
+                inscricao.horarioId
               ] || 0
             ) + 1;
 
@@ -107,13 +113,8 @@ export async function GET() {
       );
 
     /*
-     * Horários.
-     *
-     * IMPORTANTE:
-     * ignoramos o valor antigo
-     * de "inscritos" salvo no
-     * documento e usamos a
-     * quantidade real.
+     * Horários com "inscritos"
+     * calculado pela coleção real.
      */
     const horarios =
       horariosSnapshot.docs.map(
@@ -121,29 +122,42 @@ export async function GET() {
           const data =
             doc.data();
 
-          const inscritos =
-            inscritosPorHorario[
-            doc.id
-            ] || 0;
-
           return {
             id: doc.id,
-
             ...data,
 
-            /*
-             * Sobrescreve o
-             * inscritos antigo.
-             */
-            inscritos,
+            inscritos:
+              inscritosPorHorario[
+                doc.id
+              ] || 0,
           };
         }
       );
 
-    return NextResponse.json({
-      horarios,
-      inscricoes,
-    });
+    console.log(
+      "ADMIN API - horários:",
+      horarios.length
+    );
+
+    console.log(
+      "ADMIN API - inscrições:",
+      inscricoes.length
+    );
+
+    return NextResponse.json(
+      {
+        horarios,
+        inscricoes,
+      },
+      {
+        status: 200,
+
+        headers: {
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
   } catch (error) {
     console.error(
       "ERRO ADMIN INSCRICOES:",

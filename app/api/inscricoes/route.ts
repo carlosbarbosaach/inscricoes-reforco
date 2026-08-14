@@ -20,9 +20,14 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const horarioId = clean(body.horarioId);
-    const nome = clean(body.nome);
-    const turma = clean(body.turma);
+    const horarioId =
+      clean(body.horarioId);
+
+    const nome =
+      clean(body.nome);
+
+    const turma =
+      clean(body.turma);
 
     if (
       !horarioId ||
@@ -40,80 +45,93 @@ export async function POST(req: Request) {
       );
     }
 
-    // Inicializa o Firebase Admin somente
-    // quando a API realmente é chamada
-    const adminDb = getAdminDb();
+    const adminDb =
+      getAdminDb();
 
-    const horarioRef = adminDb
-      .collection("horarios")
-      .doc(horarioId);
+    const horarioRef =
+      adminDb
+        .collection("horarios")
+        .doc(horarioId);
 
     const inscricaoId =
       `${horarioId}_${key(nome)}_${key(turma)}`;
 
-    const inscricaoRef = adminDb
-      .collection("inscricoes")
-      .doc(inscricaoId);
+    const inscricaoRef =
+      adminDb
+        .collection("inscricoes")
+        .doc(inscricaoId);
 
-    await adminDb.runTransaction(
-      async (transaction) => {
-        const [
-          horarioSnapshot,
-          inscricaoSnapshot,
-        ] = await Promise.all([
-          transaction.get(horarioRef),
-          transaction.get(inscricaoRef),
-        ]);
+    const [
+      horarioSnapshot,
+      inscricaoSnapshot,
+    ] = await Promise.all([
+      horarioRef.get(),
+      inscricaoRef.get(),
+    ]);
 
-        if (!horarioSnapshot.exists) {
-          throw new Error("HORARIO");
-        }
+    if (!horarioSnapshot.exists) {
+      throw new Error("HORARIO");
+    }
 
-        if (inscricaoSnapshot.exists) {
-          throw new Error("DUP");
-        }
+    if (inscricaoSnapshot.exists) {
+      throw new Error("DUP");
+    }
 
-        const horario =
-          horarioSnapshot.data();
+    const horario =
+      horarioSnapshot.data();
 
-        if (!horario) {
-          throw new Error("HORARIO");
-        }
+    if (!horario) {
+      throw new Error("HORARIO");
+    }
 
-        if (!horario.ativo) {
-          throw new Error("FECHADO");
-        }
+    if (!horario.ativo) {
+      throw new Error("FECHADO");
+    }
 
-        const inscritos =
-          Number(horario.inscritos || 0);
+    const limite =
+      Number(
+        horario.limite || 0
+      );
 
-        const limite =
-          Number(horario.limite || 0);
+    /*
+     * CONTA AS INSCRIÇÕES REAIS
+     */
+    const contagemSnapshot =
+      await adminDb
+        .collection("inscricoes")
+        .where(
+          "horarioId",
+          "==",
+          horarioId
+        )
+        .count()
+        .get();
 
-        if (inscritos >= limite) {
-          throw new Error("LOTADO");
-        }
+    const inscritosReais =
+      contagemSnapshot
+        .data()
+        .count;
 
-        transaction.set(
-          inscricaoRef,
-          {
-            horarioId,
-            nome,
-            turma,
-            criadoEm:
-              FieldValue.serverTimestamp(),
-          }
-        );
+    if (
+      inscritosReais >= limite
+    ) {
+      throw new Error("LOTADO");
+    }
 
-        transaction.update(
-          horarioRef,
-          {
-            inscritos:
-              FieldValue.increment(1),
-          }
-        );
-      }
-    );
+    /*
+     * CRIA A INSCRIÇÃO
+     */
+    await inscricaoRef.set({
+      horarioId,
+
+      nome:
+        nome.toUpperCase(),
+
+      turma,
+
+      criadoEm:
+        FieldValue.serverTimestamp(),
+    });
 
     return NextResponse.json(
       {
@@ -167,15 +185,18 @@ export async function POST(req: Request) {
       },
     };
 
-    const resposta = erros[message];
+    const resposta =
+      erros[message];
 
     if (resposta) {
       return NextResponse.json(
         {
-          error: resposta.mensagem,
+          error:
+            resposta.mensagem,
         },
         {
-          status: resposta.status,
+          status:
+            resposta.status,
         }
       );
     }

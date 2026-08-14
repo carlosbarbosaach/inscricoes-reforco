@@ -261,15 +261,48 @@ export default function AdminApp() {
 
   useEffect(() => {
     carregar();
-
-    const interval =
-      setInterval(() => {
-        carregar();
-      }, 5000);
-
-    return () =>
-      clearInterval(interval);
   }, []);
+
+  /*
+   * Atualiza somente quando o usuário volta para a aba do Admin.
+   * Isso evita consultar o Firestore a cada poucos segundos.
+   */
+  useEffect(() => {
+    if (!logado) {
+      return;
+    }
+
+    const atualizarAoVoltar = () => {
+      if (
+        document.visibilityState ===
+        "visible"
+      ) {
+        carregar();
+      }
+    };
+
+    window.addEventListener(
+      "focus",
+      atualizarAoVoltar
+    );
+
+    document.addEventListener(
+      "visibilitychange",
+      atualizarAoVoltar
+    );
+
+    return () => {
+      window.removeEventListener(
+        "focus",
+        atualizarAoVoltar
+      );
+
+      document.removeEventListener(
+        "visibilitychange",
+        atualizarAoVoltar
+      );
+    };
+  }, [logado]);
 
   async function login(
     e: React.FormEvent
@@ -434,12 +467,13 @@ export default function AdminApp() {
       0
     );
 
+  /*
+   * A lista de inscrições é a fonte real.
+   * Não usamos mais o campo h.inscritos
+   * para os totais do painel.
+   */
   const totalInscritos =
-    horarios.reduce(
-      (acc, h) =>
-        acc + h.inscritos,
-      0
-    );
+    inscricoes.length;
 
   const totalDisponiveis =
     Math.max(
@@ -564,7 +598,7 @@ export default function AdminApp() {
 
                     <td class="nome">
                       ${escapeHtml(
-                  aluno.nome
+                  aluno.nome.toUpperCase()
                 )}
                     </td>
 
@@ -1358,10 +1392,24 @@ export default function AdminApp() {
 
             {horarios.map((h) => {
 
-              const disponiveis = Math.max(
-                0,
-                h.limite - h.inscritos
-              );
+              /*
+               * Quantidade real deste horário
+               * calculada pela lista carregada
+               * de /api/admin/inscricoes.
+               */
+              const inscritos =
+                inscricoes.filter(
+                  (inscricao) =>
+                    inscricao.horarioId ===
+                    h.id
+                ).length;
+
+              const disponiveis =
+                Math.max(
+                  0,
+                  h.limite -
+                    inscritos
+                );
 
               const selecionado =
                 filtro === h.id;
@@ -1371,7 +1419,10 @@ export default function AdminApp() {
                   ? Math.min(
                     100,
                     Math.round(
-                      (h.inscritos / h.limite) * 100
+                      (
+                        inscritos /
+                        h.limite
+                      ) * 100
                     )
                   )
                   : 0;
@@ -1476,7 +1527,7 @@ export default function AdminApp() {
 
                           <div className="mt-1 flex items-baseline gap-1">
                             <strong className="text-2xl font-bold text-[#073763]">
-                              {h.inscritos}
+                              {inscritos}
                             </strong>
 
                             <span className="text-sm text-slate-400">
@@ -1686,7 +1737,7 @@ export default function AdminApp() {
               <span className="mt-1 block text-sm text-slate-400">
                 {busca
                   ? "Tente outro nome ou turma."
-                  : "As inscrições aparecerão aqui automaticamente."}
+                  : "Nenhum aluno inscrito neste horário."}
               </span>
             </div>
           ) : (
@@ -1918,8 +1969,7 @@ export default function AdminApp() {
           </div>
 
           <span>
-            Atualização automática
-            a cada 5 segundos
+            Dados atualizados ao abrir, ao voltar para esta aba ou pelo botão Atualizar
           </span>
 
         </footer>

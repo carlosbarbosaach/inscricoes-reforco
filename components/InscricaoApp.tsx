@@ -17,15 +17,6 @@ import {
   Users,
 } from "lucide-react";
 
-import {
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-} from "firebase/firestore";
-
-import { db } from "@/lib/firebase-client";
-
 type Horario = {
   id: string;
   dia: string;
@@ -74,84 +65,102 @@ export default function InscricaoApp() {
     useRef<HTMLElement | null>(null);
 
   /* =========================================================
-     FIREBASE - HORÁRIOS EM TEMPO REAL
+     HORÁRIOS + VAGAS REAIS
+     A API calcula "inscritos" usando a coleção de inscrições.
   ========================================================= */
 
-  useEffect(() => {
-    const q = query(
-      collection(
-        db,
-        "horarios"
-      ),
-      orderBy("ordem")
-    );
-
-    const unsubscribe =
-      onSnapshot(
-        q,
-
-        (snapshot) => {
-          const dados =
-            snapshot.docs.map(
-              (doc) => ({
-                id: doc.id,
-                ...doc.data(),
-              })
-            ) as Horario[];
-
-          setHorarios(dados);
-
-          setCarregandoHorarios(
-            false
-          );
-
-          setSel((atual) => {
-            if (!atual) {
-              return "";
-            }
-
-            const horarioAtual =
-              dados.find(
-                (h) =>
-                  h.id === atual
-              );
-
-            if (!horarioAtual) {
-              return "";
-            }
-
-            const semVagas =
-              horarioAtual.inscritos >=
-              horarioAtual.limite;
-
-            if (
-              !horarioAtual.ativo ||
-              semVagas
-            ) {
-              return "";
-            }
-
-            return atual;
-          });
-        },
-
-        (error) => {
-          console.error(
-            "Erro ao carregar horários:",
-            error
-          );
-
-          setErro(
-            "Não foi possível carregar os horários disponíveis."
-          );
-
-          setCarregandoHorarios(
-            false
-          );
-        }
+  async function carregarHorarios() {
+    try {
+      setCarregandoHorarios(
+        true
       );
 
-    return unsubscribe;
+      const response =
+        await fetch(
+          "/api/horarios",
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          "Não foi possível carregar os horários."
+        );
+      }
+
+      const dados =
+        (data.horarios ||
+          []) as Horario[];
+
+      setHorarios(
+        dados
+      );
+
+      setSel((atual) => {
+        if (!atual) {
+          return "";
+        }
+
+        const horarioAtual =
+          dados.find(
+            (h) =>
+              h.id === atual
+          );
+
+        if (!horarioAtual) {
+          return "";
+        }
+
+        const inscritos =
+          Number(
+            horarioAtual.inscritos ??
+            0
+          );
+
+        const semVagas =
+          inscritos >=
+          horarioAtual.limite;
+
+        if (
+          !horarioAtual.ativo ||
+          semVagas
+        ) {
+          return "";
+        }
+
+        return atual;
+      });
+
+      setErro("");
+    } catch (error) {
+      console.error(
+        "Erro ao carregar horários:",
+        error
+      );
+
+      const mensagem =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar os horários disponíveis.";
+
+      setErro(
+        mensagem
+      );
+    } finally {
+      setCarregandoHorarios(
+        false
+      );
+    }
+  }
+
+  useEffect(() => {
+    carregarHorarios();
   }, []);
 
   /* =========================================================
@@ -175,11 +184,16 @@ export default function InscricaoApp() {
   function selecionarHorario(
     horario: Horario
   ) {
+    const inscritos =
+      Number(
+        horario.inscritos ?? 0
+      );
+
     const restantes =
       Math.max(
         0,
         horario.limite -
-        horario.inscritos
+        inscritos
       );
 
     if (
@@ -279,6 +293,8 @@ export default function InscricaoApp() {
         `Sua vaga foi reservada para ${selecionado?.dia}, ${selecionado?.horario}. As aulas iniciam em 18 de agosto.`
       );
 
+      await carregarHorarios();
+
       setNome("");
       setTurma("");
       setSel("");
@@ -322,7 +338,9 @@ export default function InscricaoApp() {
     horarios.reduce(
       (total, horario) =>
         total +
-        horario.inscritos,
+        Number(
+          horario.inscritos ?? 0
+        ),
       0
     );
 
@@ -487,7 +505,7 @@ export default function InscricaoApp() {
 
                 </span>
 
-                Vagas atualizadas em tempo real
+                Vagas atualizadas ao carregar a página
 
               </div>
 
@@ -565,22 +583,27 @@ export default function InscricaoApp() {
               {horarios.map(
                 (h) => {
 
+                  const inscritos =
+                    Number(
+                      h.inscritos ?? 0
+                    );
+
                   const rest =
                     Math.max(
                       0,
                       h.limite -
-                      h.inscritos
+                      inscritos
                     );
 
                   const pct =
-                    h.limite >
-                      0
+                    h.limite > 0
                       ? Math.min(
                         100,
                         Math.round(
-                          (h.inscritos /
-                            h.limite) *
-                          100
+                          (
+                            inscritos /
+                            h.limite
+                          ) * 100
                         )
                       )
                       : 0;
@@ -611,10 +634,10 @@ export default function InscricaoApp() {
                         )
                       }
                       className={`group relative overflow-hidden rounded-3xl border bg-white p-5 transition-all duration-200 md:p-6 ${selected
-                          ? "cursor-pointer border-[#073763] shadow-[0_16px_40px_rgba(7,55,99,0.15)]"
-                          : indisponivel
-                            ? "cursor-not-allowed border-slate-200 opacity-70"
-                            : "cursor-pointer border-slate-100 shadow-sm hover:-translate-y-1 hover:border-blue-100 hover:shadow-lg"
+                        ? "cursor-pointer border-[#073763] shadow-[0_16px_40px_rgba(7,55,99,0.15)]"
+                        : indisponivel
+                          ? "cursor-not-allowed border-slate-200 opacity-70"
+                          : "cursor-pointer border-slate-100 shadow-sm hover:-translate-y-1 hover:border-blue-100 hover:shadow-lg"
                         }`}
                     >
 
@@ -632,8 +655,8 @@ export default function InscricaoApp() {
 
                             <div
                               className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition ${selected
-                                  ? "bg-[#073763] text-white"
-                                  : "bg-blue-50 text-[#073763]"
+                                ? "bg-[#073763] text-white"
+                                : "bg-blue-50 text-[#073763]"
                                 }`}
                             >
 
@@ -742,9 +765,7 @@ export default function InscricaoApp() {
                               </span>
 
                               <strong className="mt-1 block text-xl font-bold text-slate-700">
-                                {
-                                  h.inscritos
-                                }
+                                {inscritos}
                               </strong>
 
                             </div>
@@ -842,10 +863,10 @@ export default function InscricaoApp() {
                           );
                         }}
                         className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-semibold transition ${selected
-                            ? "bg-blue-50 text-[#073763]"
-                            : indisponivel
-                              ? "cursor-not-allowed bg-slate-100 text-slate-400"
-                              : "bg-[#073763] text-white shadow-sm hover:bg-[#052b4e]"
+                          ? "bg-blue-50 text-[#073763]"
+                          : indisponivel
+                            ? "cursor-not-allowed bg-slate-100 text-slate-400"
+                            : "bg-[#073763] text-white shadow-sm hover:bg-[#052b4e]"
                           }`}
                       >
 

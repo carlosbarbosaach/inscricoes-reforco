@@ -22,14 +22,6 @@ import {
   Users,
   UserRoundCheck,
 } from "lucide-react";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  setDoc,
-} from "firebase/firestore";
-
-import { db } from "@/lib/firebase-client";
 
 type H = {
   id: string;
@@ -46,14 +38,8 @@ type I = {
   turma: string;
 };
 
-type StatusPresenca =
-  "" | "P" | "F";
-
-type Frequencias =
-  Record<
-    string,
-    StatusPresenca[]
-  >;
+type StatusPresenca = "" | "P" | "F";
+type Frequencias = Record<string, StatusPresenca[]>;
 
 const TOTAL_AULAS = 10;
 const FREQUENCIA_STORAGE_KEY = "reforco-frequencias-v1";
@@ -69,14 +55,15 @@ export default function AdminApp() {
   const [senha, setSenha] = useState("");
   const [logado, setLogado] =
     useState(false);
-  const [frequencias, setFrequencias] =
-    useState<Frequencias>({});
 
   const [horarios, setHorarios] =
     useState<H[]>([]);
 
   const [inscricoes, setInscricoes] =
     useState<I[]>([]);
+
+  const [frequencias, setFrequencias] =
+    useState<Frequencias>({});
 
   const [filtro, setFiltro] =
     useState("");
@@ -97,6 +84,104 @@ export default function AdminApp() {
     ultimaAtualizacao,
     setUltimaAtualizacao,
   ] = useState<Date | null>(null);
+
+  useEffect(() => {
+    try {
+      const salvo = window.localStorage.getItem(
+        FREQUENCIA_STORAGE_KEY
+      );
+
+      if (salvo) {
+        setFrequencias(JSON.parse(salvo));
+      }
+    } catch (error) {
+      console.error(
+        "Erro ao carregar frequências:",
+        error
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        FREQUENCIA_STORAGE_KEY,
+        JSON.stringify(frequencias)
+      );
+    } catch (error) {
+      console.error(
+        "Erro ao salvar frequências:",
+        error
+      );
+    }
+  }, [frequencias]);
+
+  function frequenciaDoAluno(
+    alunoId: string
+  ): StatusPresenca[] {
+    const atual =
+      frequencias[alunoId] || [];
+
+    return Array.from(
+      { length: TOTAL_AULAS },
+      (_, index) =>
+        atual[index] || ""
+    );
+  }
+
+  function alternarPresenca(
+    alunoId: string,
+    aulaIndex: number
+  ) {
+    setFrequencias((estadoAtual) => {
+      const aulas = Array.from(
+        { length: TOTAL_AULAS },
+        (_, index) =>
+          estadoAtual[alunoId]?.[index] ||
+          ""
+      );
+
+      const statusAtual =
+        aulas[aulaIndex];
+
+      aulas[aulaIndex] =
+        statusAtual === ""
+          ? "P"
+          : statusAtual === "P"
+            ? "F"
+            : "";
+
+      return {
+        ...estadoAtual,
+        [alunoId]: aulas,
+      };
+    });
+  }
+
+  function calcularFrequencia(
+    alunoId: string
+  ) {
+    const aulas =
+      frequenciaDoAluno(alunoId);
+
+    const realizadas =
+      aulas.filter(
+        (status) => status !== ""
+      ).length;
+
+    const presencas =
+      aulas.filter(
+        (status) => status === "P"
+      ).length;
+
+    if (realizadas === 0) {
+      return 0;
+    }
+
+    return Math.round(
+      (presencas / realizadas) * 100
+    );
+  }
 
   async function carregar(
     mostrarLoading = false
@@ -128,11 +213,31 @@ export default function AdminApp() {
       const j = await r.json();
 
       const novosHorarios =
-        j.horarios || [];
+        Array.isArray(j.horarios)
+          ? j.horarios
+          : [];
 
-      setHorarios(novosHorarios);
+      const novasInscricoes =
+        Array.isArray(j.inscricoes)
+          ? j.inscricoes
+          : [];
+
+      console.log(
+        "ADMIN - horários:",
+        novosHorarios.length
+      );
+
+      console.log(
+        "ADMIN - inscrições:",
+        novasInscricoes.length
+      );
+
+      setHorarios(
+        novosHorarios
+      );
+
       setInscricoes(
-        j.inscricoes || []
+        novasInscricoes
       );
 
       setLogado(true);
@@ -173,262 +278,6 @@ export default function AdminApp() {
       setAtualizando(false);
     }
   }
-
-  useEffect(() => {
-    try {
-      const salvo =
-        window.localStorage.getItem(
-          FREQUENCIA_STORAGE_KEY
-        );
-
-      if (salvo) {
-        setFrequencias(
-          JSON.parse(salvo)
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Erro ao carregar frequências:",
-        error
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        FREQUENCIA_STORAGE_KEY,
-        JSON.stringify(frequencias)
-      );
-    } catch (error) {
-      console.error(
-        "Erro ao salvar frequências:",
-        error
-      );
-    }
-  }, [frequencias]);
-
-  function frequenciaDoAluno(
-    alunoId: string
-  ): StatusPresenca[] {
-    const atual =
-      frequencias[alunoId] || [];
-
-    return Array.from(
-      {
-        length:
-          TOTAL_AULAS,
-      },
-      (_, index) =>
-        atual[index] || ""
-    );
-  }
-
-  async function alternarPresenca(
-    alunoId: string,
-    aulaIndex: number
-  ) {
-    const aluno =
-      inscricoes.find(
-        (item) =>
-          item.id === alunoId
-      );
-
-    if (!aluno) {
-      console.error(
-        "Aluno não encontrado:",
-        alunoId
-      );
-      return;
-    }
-
-    const aulas =
-      frequenciaDoAluno(
-        alunoId
-      );
-
-    const statusAtual =
-      aulas[aulaIndex];
-
-    const novoStatus:
-      StatusPresenca =
-      statusAtual === ""
-        ? "P"
-        : statusAtual === "P"
-          ? "F"
-          : "";
-
-    const novasAulas =
-      [...aulas];
-
-    novasAulas[aulaIndex] =
-      novoStatus;
-
-    console.log(
-      "SALVANDO NO FIREBASE:",
-      {
-        alunoId,
-        aulaIndex,
-        novasAulas,
-      }
-    );
-
-    setFrequencias(
-      (estadoAtual) => ({
-        ...estadoAtual,
-        [alunoId]:
-          novasAulas,
-      })
-    );
-
-    try {
-      await setDoc(
-        doc(
-          db,
-          "frequencias",
-          alunoId
-        ),
-        {
-          inscricaoId:
-            alunoId,
-
-          horarioId:
-            aluno.horarioId,
-
-          nome:
-            aluno.nome,
-
-          turma:
-            aluno.turma,
-
-          aulas:
-            novasAulas,
-
-          atualizadoEm:
-            new Date().toISOString(),
-        },
-        {
-          merge: true,
-        }
-      );
-
-      console.log(
-        "FREQUÊNCIA SALVA COM SUCESSO!"
-      );
-    } catch (error) {
-      console.error(
-        "ERRO AO SALVAR FREQUÊNCIA:",
-        error
-      );
-
-      setErro(
-        "Erro ao salvar frequência no Firebase."
-      );
-    }
-  }
-
-  function calcularFrequencia(
-    alunoId: string
-  ) {
-    const aulas =
-      frequenciaDoAluno(
-        alunoId
-      );
-
-    const realizadas =
-      aulas.filter(
-        (status) =>
-          status !== ""
-      ).length;
-
-    const presencas =
-      aulas.filter(
-        (status) =>
-          status === "P"
-      ).length;
-
-    if (
-      realizadas === 0
-    ) {
-      return 0;
-    }
-
-    return Math.round(
-      (presencas /
-        realizadas) *
-      100
-    );
-  }
-
-  useEffect(() => {
-    if (!logado) {
-      return;
-    }
-
-    const unsubscribe =
-      onSnapshot(
-        collection(
-          db,
-          "frequencias"
-        ),
-
-        (snapshot) => {
-          const dados:
-            Frequencias = {};
-
-          snapshot.docs.forEach(
-            (documento) => {
-              const data =
-                documento.data();
-
-              const aulas =
-                Array.isArray(
-                  data.aulas
-                )
-                  ? data.aulas
-                  : [];
-
-              dados[
-                documento.id
-              ] = Array.from(
-                {
-                  length:
-                    TOTAL_AULAS,
-                },
-                (_, index) => {
-                  const status =
-                    aulas[index];
-
-                  if (
-                    status === "P" ||
-                    status === "F"
-                  ) {
-                    return status;
-                  }
-
-                  return "";
-                }
-              );
-            }
-          );
-
-          setFrequencias(
-            dados
-          );
-        },
-
-        (error) => {
-          console.error(
-            "Erro ao carregar frequências:",
-            error
-          );
-        }
-      );
-
-    return () => {
-      unsubscribe();
-    };
-  }, [logado]);
 
   useEffect(() => {
     carregar();
@@ -598,11 +447,7 @@ export default function AdminApp() {
     );
 
   const totalInscritos =
-    horarios.reduce(
-      (acc, h) =>
-        acc + h.inscritos,
-      0
-    );
+    inscricoes.length;
 
   const totalDisponiveis =
     Math.max(
@@ -697,151 +542,113 @@ export default function AdminApp() {
         const linhas =
           alunosDaTurma
             .map(
-              (
-                aluno,
-                index
-              ) => {
+              (aluno, index) => {
                 const aulas =
                   frequenciaDoAluno(
                     aluno.id
                   );
 
-                const percentual =
+                const frequencia =
                   calcularFrequencia(
                     aluno.id
                   );
 
-                const temRegistro =
-                  aulas.some(
-                    (status) =>
-                      status !== ""
-                  );
-
-                const colunasAulas =
+                const colunas =
                   aulas
                     .map(
                       (status) => `
-                      <td
-                        class="presenca ${status === "P"
-                          ? "presente"
-                          : status === "F"
-                            ? "falta"
-                            : ""
-                        }"
-                      >
-                        ${status || ""}
-                      </td>
-                    `
+                        <td class="presenca">
+                          ${status}
+                        </td>
+                      `
                     )
                     .join("");
 
                 return `
-                <tr>
+                  <tr>
+                    <td class="numero">
+                      ${index + 1}
+                    </td>
 
-                  <td class="numero">
-                    ${index + 1}
-                  </td>
-
-                  <td class="nome">
-                    ${escapeHtml(
-                  aluno.nome
+                    <td class="nome">
+                      ${escapeHtml(
+                  aluno.nome.toUpperCase()
                 )}
-                  </td>
+                    </td>
 
-                  ${colunasAulas}
+                    ${colunas}
 
-                  <td class="frequencia">
-                    ${temRegistro
-                    ? `${percentual}%`
-                    : ""
+                    <td class="percentual">
+                      ${aulas.some(
+                  (status) =>
+                    status !== ""
+                )
+                    ? `${frequencia}%`
+                    : "—"
                   }
-                  </td>
-
-                </tr>
-              `;
+                    </td>
+                  </tr>
+                `;
               }
             )
             .join("");
 
-        const cabecalhoAulas =
-          Array.from(
+        return `
+          <section class="bloco-turma">
+            <div class="titulo-turma">
+              <strong>
+                ${escapeHtml(turma)}
+              </strong>
+
+              <span>
+                ${alunosDaTurma.length}
+                ${alunosDaTurma.length === 1
+            ? " aluno"
+            : " alunos"
+          }
+              </span>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th class="numero">
+                    Nº
+                  </th>
+
+                  <th class="nome">
+                    Aluno
+                  </th>
+
+                  ${Array.from(
             {
               length:
                 TOTAL_AULAS,
             },
             (_, index) => `
-            <th class="aula">
-              ${String(
+                      <th class="aula">
+                        ${String(
               index + 1
             ).padStart(
               2,
               "0"
             )}
-            </th>
-          `
-          ).join("");
+                      </th>
+                    `
+          ).join("")}
 
-        return `
-        <section class="bloco-turma">
+                  <th class="percentual">
+                    Freq.
+                  </th>
+                </tr>
+              </thead>
 
-          <div class="titulo-turma">
-
-            <div>
-              <span class="turma-label">
-                TURMA
-              </span>
-
-              <strong>
-                ${escapeHtml(
-          turma
-        )}
-              </strong>
-            </div>
-
-            <span class="quantidade">
-              ${alunosDaTurma.length
-          }
-              ${alunosDaTurma.length ===
-            1
-            ? "aluno"
-            : "alunos"
-          }
-            </span>
-
-          </div>
-
-          <table>
-
-            <thead>
-
-              <tr>
-
-                <th class="numero">
-                  Nº
-                </th>
-
-                <th class="nome">
-                  ALUNO
-                </th>
-
-                ${cabecalhoAulas}
-
-                <th class="frequencia">
-                  FREQ.
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-              ${linhas}
-            </tbody>
-
-          </table>
-
-        </section>
-      `;
+              <tbody>
+                ${linhas}
+              </tbody>
+            </table>
+          </section>
+        `;
       }).join("");
 
     const janela =
@@ -855,507 +662,232 @@ export default function AdminApp() {
       alert(
         "Não foi possível abrir a impressão. Verifique se o navegador está bloqueando pop-ups."
       );
-
       return;
     }
 
     janela.document.write(`
-    <!DOCTYPE html>
-
-    <html lang="pt-BR">
-
-      <head>
-
-        <meta charset="UTF-8" />
-
-        <title>
-          Frequência - Reforço Escolar
-        </title>
-
-        <style>
-
-          @page {
-            size: A4 landscape;
-            margin: 10mm;
-          }
-
-          * {
-            box-sizing: border-box;
-          }
-
-          body {
-            margin: 0;
-            padding: 0;
-
-            background: white;
-            color: #111827;
-
-            font-family:
-              Arial,
-              Helvetica,
-              sans-serif;
-          }
-
-          /* =========================
-             CABEÇALHO
-          ========================= */
-
-          .cabecalho {
-            display: flex;
-
-            align-items: flex-end;
-            justify-content:
-              space-between;
-
-            margin-bottom: 18px;
-
-            padding-bottom: 12px;
-
-            border-bottom:
-              2px solid #073763;
-          }
-
-          .cabecalho h1 {
-            margin: 0;
-
-            color: #073763;
-
-            font-size: 21px;
-
-            font-weight: 800;
-          }
-
-          .cabecalho h2 {
-            margin:
-              5px 0 0;
-
-            font-size: 15px;
-
-            font-weight: 700;
-          }
-
-          .cabecalho p {
-            margin:
-              6px 0 0;
-
-            color: #64748b;
-
-            font-size: 11px;
-          }
-
-          .cabecalho-total {
-            text-align: right;
-          }
-
-          .cabecalho-total span {
-            display: block;
-
-            color: #64748b;
-
-            font-size: 9px;
-
-            font-weight: 700;
-
-            text-transform:
-              uppercase;
-
-            letter-spacing:
-              0.08em;
-          }
-
-          .cabecalho-total strong {
-            display: block;
-
-            margin-top: 3px;
-
-            color: #073763;
-
-            font-size: 20px;
-          }
-
-          /* =========================
-             TURMAS
-          ========================= */
-
-          .bloco-turma {
-            margin-bottom: 18px;
-
-            break-inside: avoid;
-
-            page-break-inside:
-              avoid;
-          }
-
-          .titulo-turma {
-            display: flex;
-
-            align-items: center;
-
-            justify-content:
-              space-between;
-
-            padding:
-              7px 10px;
-
-            background:
-              #073763;
-
-            color:
-              white;
-
-            border:
-              1px solid #073763;
-
-            border-radius:
-              5px 5px 0 0;
-          }
-
-          .turma-label {
-            display: block;
-
-            margin-bottom: 1px;
-
-            color:
-              rgba(
-                255,
-                255,
-                255,
-                0.6
-              );
-
-            font-size: 7px;
-
-            font-weight: 700;
-
-            letter-spacing:
-              0.12em;
-          }
-
-          .titulo-turma strong {
-            font-size: 13px;
-
-            font-weight: 800;
-          }
-
-          .quantidade {
-            font-size: 9px;
-
-            font-weight: 600;
-
-            color:
-              rgba(
-                255,
-                255,
-                255,
-                0.85
-              );
-          }
-
-          /* =========================
-             TABELA
-          ========================= */
-
-          table {
-            width: 100%;
-
-            table-layout:
-              fixed;
-
-            border-collapse:
-              collapse;
-          }
-
-          thead {
-            display:
-              table-header-group;
-          }
-
-          tr {
-            page-break-inside:
-              avoid;
-          }
-
-          th,
-          td {
-            height: 29px;
-
-            border:
-              1px solid #94a3b8;
-
-            padding:
-              3px;
-
-            font-size:
-              9px;
-          }
-
-          th {
-            background:
-              #f1f5f9;
-
-            color:
-              #334155;
-
-            font-weight:
-              700;
-
-            text-align:
-              center;
-          }
-
-          td {
-            background:
-              white;
-          }
-
-          /* =========================
-             COLUNAS
-          ========================= */
-
-          .numero {
-            width: 30px;
-
-            text-align:
-              center;
-          }
-
-          .nome {
-            width: 220px;
-
-            text-align:
-              left;
-          }
-
-          td.nome {
-            padding-left: 7px;
-
-            font-size:
-              9.5px;
-
-            font-weight:
-              600;
-          }
-
-          .aula,
-          .presenca {
-            width: 36px;
-
-            text-align:
-              center;
-          }
-
-          .frequencia {
-            width: 52px;
-
-            text-align:
-              center;
-
-            font-weight:
-              700;
-          }
-
-          /* =========================
-             P / F
-          ========================= */
-
-          td.presenca {
-            font-size: 11px;
-
-            font-weight: 800;
-          }
-
-          td.presente {
-            background:
-              #dcfce7;
-
-            color:
-              #15803d;
-          }
-
-          td.falta {
-            background:
-              #fee2e2;
-
-            color:
-              #b91c1c;
-          }
-
-          /* =========================
-             LEGENDA
-          ========================= */
-
-          .legenda {
-            display: flex;
-
-            align-items: center;
-
-            gap: 14px;
-
-            margin-top: 8px;
-
-            color:
-              #64748b;
-
-            font-size: 9px;
-          }
-
-          .legenda-item {
-            display: flex;
-
-            align-items: center;
-
-            gap: 4px;
-          }
-
-          .legenda-box {
-            display: flex;
-
-            width: 18px;
-
-            height: 18px;
-
-            align-items: center;
-
-            justify-content:
-              center;
-
-            border-radius:
-              3px;
-
-            font-size:
-              9px;
-
-            font-weight:
-              800;
-          }
-
-          .legenda-p {
-            background:
-              #dcfce7;
-
-            color:
-              #15803d;
-          }
-
-          .legenda-f {
-            background:
-              #fee2e2;
-
-            color:
-              #b91c1c;
-          }
-
-          /* =========================
-             PRINT
-          ========================= */
-
-          @media print {
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8" />
+
+          <title>
+            Frequência - Reforço Escolar
+          </title>
+
+          <style>
+            @page {
+              size: A4 landscape;
+              margin: 10mm;
+            }
+
+            * {
+              box-sizing: border-box;
+            }
 
             body {
-              -webkit-print-color-adjust:
-                exact;
+              margin: 0;
+              padding: 0;
+              background: white;
+              color: #111827;
+              font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+            }
 
-              print-color-adjust:
-                exact;
+            .cabecalho {
+              display: flex;
+              align-items: flex-end;
+              justify-content:
+                space-between;
+              padding-bottom: 12px;
+              margin-bottom: 16px;
+              border-bottom:
+                2px solid #073763;
+            }
+
+            .cabecalho h1 {
+              margin: 0;
+              color: #073763;
+              font-size: 20px;
+            }
+
+            .cabecalho h2 {
+              margin: 4px 0 0;
+              font-size: 15px;
+            }
+
+            .cabecalho p {
+              margin: 5px 0 0;
+              color: #4b5563;
+              font-size: 12px;
+            }
+
+            .total {
+              text-align: right;
+            }
+
+            .total span {
+              display: block;
+              color: #6b7280;
+              font-size: 10px;
+              font-weight: 700;
+              text-transform: uppercase;
+            }
+
+            .total strong {
+              display: block;
+              margin-top: 2px;
+              color: #073763;
+              font-size: 18px;
             }
 
             .bloco-turma {
-              break-inside:
-                avoid;
+              margin-bottom: 18px;
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
 
+            .titulo-turma {
+              display: flex;
+              align-items: center;
+              justify-content:
+                space-between;
+              padding: 7px 10px;
+              color: white;
+              background: #073763;
+              border: 1px solid #073763;
+              border-radius:
+                5px 5px 0 0;
+            }
+
+            .titulo-turma strong {
+              font-size: 14px;
+            }
+
+            .titulo-turma span {
+              font-size: 10px;
+              font-weight: 600;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              table-layout: fixed;
+            }
+
+            thead {
+              display:
+                table-header-group;
+            }
+
+            tr {
               page-break-inside:
                 avoid;
             }
 
-          }
+            th,
+            td {
+              height: 30px;
+              padding: 4px;
+              border:
+                1px solid #9ca3af;
+              font-size: 10px;
+            }
 
-        </style>
+            th {
+              background: #f1f5f9;
+              color: #334155;
+              font-weight: 700;
+              text-align: center;
+            }
 
-      </head>
+            .numero {
+              width: 32px;
+              text-align: center;
+            }
 
-      <body>
+            .nome {
+              width: 220px;
+              text-align: left;
+            }
 
-        <div class="cabecalho">
+            td.nome {
+              padding-left: 8px;
+              font-size: 10.5px;
+              font-weight: 600;
+            }
 
-          <div>
+            .aula,
+            .presenca {
+              width: 38px;
+              text-align: center;
+            }
 
-            <h1>
-              Colégio do Campeche
-            </h1>
+            td.presenca {
+              font-size: 12px;
+              font-weight: 800;
+            }
 
-            <h2>
-              Reforço Escolar —
-              Matemática Básica
-            </h2>
+            .percentual {
+              width: 52px;
+              text-align: center;
+              font-weight: 700;
+            }
 
-            <p>
+            @media print {
+              body {
+                -webkit-print-color-adjust:
+                  exact;
+                print-color-adjust:
+                  exact;
+              }
+            }
+          </style>
+        </head>
 
-              ${escapeHtml(
+        <body>
+          <div class="cabecalho">
+            <div>
+              <h1>
+                Colégio do Campeche
+              </h1>
+
+              <h2>
+                Reforço Escolar —
+                Matemática Básica
+              </h2>
+
+              <p>
+                ${escapeHtml(
       atual.dia
     )}
-
-              •
-
-              ${escapeHtml(
+                •
+                ${escapeHtml(
       atual.horario
     )}
+                • Frequência das 10 aulas
+              </p>
+            </div>
 
-              •
+            <div class="total">
+              <span>
+                Total de inscritos
+              </span>
 
-              Controle de frequência —
-              10 aulas
-
-            </p>
-
+              <strong>
+                ${listaCompleta.length}
+              </strong>
+            </div>
           </div>
 
-          <div class="cabecalho-total">
-
-            <span>
-              Total de inscritos
-            </span>
-
-            <strong>
-              ${listaCompleta.length}
-            </strong>
-
-          </div>
-
-        </div>
-
-        ${tabelasPorTurma}
-
-        <div class="legenda">
-
-          <div class="legenda-item">
-
-            <span class="legenda-box legenda-p">
-              P
-            </span>
-
-            Presente
-
-          </div>
-
-          <div class="legenda-item">
-
-            <span class="legenda-box legenda-f">
-              F
-            </span>
-
-            Falta
-
-          </div>
-
-        </div>
-
-      </body>
-
-    </html>
-  `);
+          ${tabelasPorTurma}
+        </body>
+      </html>
+    `);
 
     janela.document.close();
-
     janela.focus();
 
     setTimeout(() => {
@@ -1365,7 +897,6 @@ export default function AdminApp() {
 
   if (carregando) {
     return (
-
       <main className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="text-center">
 
@@ -1389,7 +920,6 @@ export default function AdminApp() {
 
   if (!logado) {
     return (
-
       <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
 
         <section className="w-full max-w-md rounded-[28px] border border-slate-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
@@ -1836,10 +1366,19 @@ export default function AdminApp() {
 
             {horarios.map((h) => {
 
-              const disponiveis = Math.max(
-                0,
-                h.limite - h.inscritos
-              );
+              const inscritos =
+                inscricoes.filter(
+                  (inscricao) =>
+                    inscricao.horarioId ===
+                    h.id
+                ).length;
+
+              const disponiveis =
+                Math.max(
+                  0,
+                  h.limite -
+                    inscritos
+                );
 
               const selecionado =
                 filtro === h.id;
@@ -1847,11 +1386,14 @@ export default function AdminApp() {
               const percentual =
                 h.limite > 0
                   ? Math.min(
-                    100,
-                    Math.round(
-                      (h.inscritos / h.limite) * 100
+                      100,
+                      Math.round(
+                        (
+                          inscritos /
+                          h.limite
+                        ) * 100
+                      )
                     )
-                  )
                   : 0;
 
               const status =
@@ -1954,7 +1496,7 @@ export default function AdminApp() {
 
                           <div className="mt-1 flex items-baseline gap-1">
                             <strong className="text-2xl font-bold text-[#073763]">
-                              {h.inscritos}
+                              {inscritos}
                             </strong>
 
                             <span className="text-sm text-slate-400">
@@ -2033,7 +1575,7 @@ export default function AdminApp() {
 
         </section>
 
-        {/* LISTA */}
+        {/* LISTA / FREQUÊNCIA */}
         <section className="mt-6 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
 
           <div className="border-b border-slate-200 p-5 md:p-7">
@@ -2041,7 +1583,6 @@ export default function AdminApp() {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
               <div>
-
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                   Frequência
                 </span>
@@ -2052,10 +1593,7 @@ export default function AdminApp() {
                 </h2>
 
                 <p className="mt-1 flex items-center gap-2 text-sm text-slate-500">
-
-                  <Clock3
-                    size={15}
-                  />
+                  <Clock3 size={15} />
 
                   {atual?.horario}
 
@@ -2064,9 +1602,7 @@ export default function AdminApp() {
                   </span>
 
                   10 aulas
-
                 </p>
-
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -2077,12 +1613,10 @@ export default function AdminApp() {
                     setFiltro(
                       e.target.value
                     );
-
                     setBusca("");
                   }}
                   className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-[#073763] focus:ring-4 focus:ring-blue-100"
                 >
-
                   {horarios.map(
                     (h) => (
                       <option
@@ -2093,7 +1627,6 @@ export default function AdminApp() {
                       </option>
                     )
                   )}
-
                 </select>
 
                 <button
@@ -2107,23 +1640,16 @@ export default function AdminApp() {
                   }
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#073763] px-5 text-sm font-semibold text-white transition hover:bg-[#052b4e] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-
-                  <Printer
-                    size={17}
-                  />
-
+                  <Printer size={17} />
                   Imprimir frequência
-
                 </button>
 
               </div>
-
             </div>
 
-            <div className="mt-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
               <div className="relative w-full sm:max-w-sm">
-
                 <Search
                   size={17}
                   className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
@@ -2139,36 +1665,26 @@ export default function AdminApp() {
                   placeholder="Buscar aluno ou turma..."
                   className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#073763] focus:ring-4 focus:ring-blue-100"
                 />
-
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs">
-
                 <span className="inline-flex items-center gap-1.5 text-slate-500">
-
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 font-bold text-emerald-700">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-100 font-bold text-emerald-700">
                     P
                   </span>
-
                   Presente
-
                 </span>
 
                 <span className="inline-flex items-center gap-1.5 text-slate-500">
-
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 font-bold text-red-700">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-red-100 font-bold text-red-700">
                     F
                   </span>
-
                   Falta
-
                 </span>
 
                 <span className="text-slate-400">
-                  Clique:
-                  vazio → P → F
+                  Clique: vazio → P → F
                 </span>
-
               </div>
 
             </div>
@@ -2176,15 +1692,9 @@ export default function AdminApp() {
           </div>
 
           {lista.length === 0 ? (
-
             <div className="px-5 py-16 text-center">
-
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-
-                <Users
-                  size={24}
-                />
-
+                <Users size={24} />
               </div>
 
               <strong className="mt-4 block text-slate-700">
@@ -2196,224 +1706,185 @@ export default function AdminApp() {
               <span className="mt-1 block text-sm text-slate-400">
                 {busca
                   ? "Tente outro nome ou turma."
-                  : "As inscrições aparecerão aqui automaticamente."}
+                  : "Nenhum aluno inscrito neste horário."}
               </span>
-
             </div>
-
           ) : (
-
             <div className="space-y-5 bg-slate-50/60 p-4 md:p-6">
 
-              {TURMAS.map(
-                (turma) => {
+              {TURMAS.map((turma) => {
+                const alunosDaTurma =
+                  lista.filter(
+                    (aluno) =>
+                      aluno.turma === turma
+                  );
 
-                  const alunosDaTurma =
-                    lista.filter(
-                      (aluno) =>
-                        aluno.turma ===
-                        turma
-                    );
+                if (
+                  alunosDaTurma.length === 0
+                ) {
+                  return null;
+                }
 
-                  if (
-                    alunosDaTurma.length ===
-                    0
-                  ) {
-                    return null;
-                  }
+                return (
+                  <div
+                    key={turma}
+                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                  >
 
-                  return (
-                    <div
-                      key={turma}
-                      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
-                    >
-
-                      {/* TÍTULO DA TURMA */}
-                      <div className="flex items-center justify-between bg-[#073763] px-5 py-3 text-white">
-
-                        <div>
-
-                          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
-                            Turma
-                          </span>
-
-                          <strong className="block text-base font-bold">
-                            {turma}
-                          </strong>
-
-                        </div>
-
-                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
-
-                          {alunosDaTurma.length}{" "}
-
-                          {alunosDaTurma.length ===
-                            1
-                            ? "aluno"
-                            : "alunos"}
-
+                    <div className="flex items-center justify-between bg-[#073763] px-5 py-3 text-white">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
+                          Turma
                         </span>
 
+                        <strong className="block text-base font-bold">
+                          {turma}
+                        </strong>
                       </div>
 
-                      {/* TABELA */}
-                      <div className="overflow-x-auto">
+                      <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
+                        {alunosDaTurma.length}{" "}
+                        {alunosDaTurma.length ===
+                          1
+                          ? "aluno"
+                          : "alunos"}
+                      </span>
+                    </div>
 
-                        <table className="min-w-[1050px] w-full border-collapse text-left">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-[1050px] w-full border-collapse text-left">
 
-                          <thead>
+                        <thead>
+                          <tr className="border-b border-slate-200 bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
+                            <th className="w-14 px-4 py-3 text-center font-semibold">
+                              Nº
+                            </th>
 
-                            <tr className="border-b border-slate-200 bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
+                            <th className="min-w-[240px] px-4 py-3 font-semibold">
+                              Aluno
+                            </th>
 
-                              <th className="w-14 px-4 py-3 text-center font-semibold">
-                                Nº
-                              </th>
+                            {Array.from(
+                              {
+                                length:
+                                  TOTAL_AULAS,
+                              },
+                              (_, index) => (
+                                <th
+                                  key={
+                                    index
+                                  }
+                                  className="w-14 px-2 py-3 text-center font-semibold"
+                                >
+                                  {String(
+                                    index +
+                                    1
+                                  ).padStart(
+                                    2,
+                                    "0"
+                                  )}
+                                </th>
+                              )
+                            )}
 
-                              <th className="min-w-[240px] px-4 py-3 font-semibold">
-                                Aluno
-                              </th>
+                            <th className="w-24 px-3 py-3 text-center font-semibold">
+                              Freq.
+                            </th>
+                          </tr>
+                        </thead>
 
-                              {Array.from(
-                                {
-                                  length:
-                                    TOTAL_AULAS,
-                                },
-                                (
-                                  _,
-                                  index
-                                ) => (
-                                  <th
-                                    key={
-                                      index
-                                    }
-                                    className="w-14 px-2 py-3 text-center font-semibold"
-                                  >
-                                    {String(
-                                      index +
-                                      1
-                                    ).padStart(
-                                      2,
-                                      "0"
-                                    )}
-                                  </th>
-                                )
-                              )}
+                        <tbody>
+                          {alunosDaTurma.map(
+                            (
+                              aluno,
+                              index
+                            ) => {
+                              const aulas =
+                                frequenciaDoAluno(
+                                  aluno.id
+                                );
 
-                              <th className="w-24 px-3 py-3 text-center font-semibold">
-                                Freq.
-                              </th>
-                            </tr>
+                              const percentual =
+                                calcularFrequencia(
+                                  aluno.id
+                                );
 
-                          </thead>
+                              const temRegistro =
+                                aulas.some(
+                                  (
+                                    status
+                                  ) =>
+                                    status !==
+                                    ""
+                                );
 
-                          <tbody>
-
-                            {alunosDaTurma.map(
-                              (
-                                aluno,
-                                index
-                              ) => {
-
-                                const aulas =
-                                  frequenciaDoAluno(
+                              return (
+                                <tr
+                                  key={
                                     aluno.id
-                                  );
+                                  }
+                                  className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70"
+                                >
+                                  <td className="px-4 py-3 text-center text-sm font-medium text-slate-400">
+                                    {index +
+                                      1}
+                                  </td>
 
-                                const percentual =
-                                  calcularFrequencia(
-                                    aluno.id
-                                  );
-
-                                const temRegistro =
-                                  aulas.some(
-                                    (
-                                      status
-                                    ) =>
-                                      status !==
-                                      ""
-                                  );
-
-                                return (
-                                  <tr
-                                    key={
-                                      aluno.id
-                                    }
-                                    className="border-b border-slate-100 last:border-b-0 transition hover:bg-slate-50/70"
-                                  >
-
-                                    <td className="px-4 py-3 text-center text-sm font-medium text-slate-400">
-                                      {index +
-                                        1}
-                                    </td>
-
-                                    <td className="px-4 py-3">
-
-                                      <div className="flex items-center gap-3">
-
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-[#073763]">
-
-                                          {aluno.nome
-                                            .charAt(
-                                              0
-                                            )
-                                            .toUpperCase()}
-
-                                        </div>
-
-                                        <strong className="whitespace-nowrap text-sm font-semibold uppercase text-slate-800">
-                                          {aluno.nome}
-                                        </strong>
-
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-[#073763]">
+                                        {aluno.nome
+                                          .charAt(
+                                            0
+                                          )
+                                          .toUpperCase()}
                                       </div>
 
-                                    </td>
+                                      <strong className="whitespace-nowrap text-sm font-semibold uppercase text-slate-800">
+                                        {aluno.nome}
+                                      </strong>
+                                    </div>
+                                  </td>
 
-                                    {/* 10 AULAS */}
-                                    {aulas.map(
-                                      (
-                                        status,
-                                        aulaIndex
-                                      ) => (
-                                        <td
-                                          key={
-                                            aulaIndex
+                                  {aulas.map(
+                                    (
+                                      status,
+                                      aulaIndex
+                                    ) => (
+                                      <td
+                                        key={
+                                          aulaIndex
+                                        }
+                                        className="px-2 py-3 text-center"
+                                      >
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            alternarPresenca(
+                                              aluno.id,
+                                              aulaIndex
+                                            )
                                           }
-                                          className="px-2 py-3 text-center"
-                                        >
-
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              alternarPresenca(
-                                                aluno.id,
-                                                aulaIndex
-                                              )
-                                            }
-                                            title={`Aula ${aulaIndex +
-                                              1
-                                              }`}
-                                            className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-extrabold transition ${status ===
+                                          title={`Aula ${aulaIndex + 1}: clique para alterar a frequência`}
+                                          className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-extrabold transition ${status ===
                                               "P"
                                               ? "border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                                               : status ===
                                                 "F"
                                                 ? "border-red-200 bg-red-100 text-red-700 hover:bg-red-200"
                                                 : "border-slate-200 bg-white text-slate-300 hover:border-blue-300 hover:bg-blue-50"
-                                              }`}
-                                          >
-                                            {status ||
-                                              "—"}
-                                          </button>
+                                            }`}
+                                        >
+                                          {status ||
+                                            "—"}
+                                        </button>
+                                      </td>
+                                    )
+                                  )}
 
-                                        </td>
-                                      )
-                                    )}
-
-                                    {/* FREQUÊNCIA */}
-                                    <td className="px-3 py-3 text-center">
-
-                                      <span
-                                        className={`inline-flex min-w-[58px] justify-center rounded-full px-2.5 py-1 text-xs font-bold ${!temRegistro
+                                  <td className="px-3 py-3 text-center">
+                                    <span
+                                      className={`inline-flex min-w-[58px] justify-center rounded-full px-2.5 py-1 text-xs font-bold ${!temRegistro
                                           ? "bg-slate-100 text-slate-400"
                                           : percentual >=
                                             75
@@ -2422,37 +1893,27 @@ export default function AdminApp() {
                                               50
                                               ? "bg-amber-100 text-amber-700"
                                               : "bg-red-100 text-red-700"
-                                          }`}
-                                      >
+                                        }`}
+                                    >
+                                      {temRegistro
+                                        ? `${percentual}%`
+                                        : "—"}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            }
+                          )}
+                        </tbody>
 
-                                        {temRegistro
-                                          ? `${percentual}%`
-                                          : "—"}
-
-                                      </span>
-
-                                    </td>
-
-                                    {/* TROCA DE HORÁRIO */}
-
-                                  </tr>
-                                );
-                              }
-                            )}
-
-                          </tbody>
-
-                        </table>
-
-                      </div>
-
+                      </table>
                     </div>
-                  );
-                }
-              )}
+
+                  </div>
+                );
+              })}
 
             </div>
-
           )}
 
         </section>
@@ -2477,8 +1938,7 @@ export default function AdminApp() {
           </div>
 
           <span>
-            Atualização automática
-            a cada 5 segundos
+            Atualize os dados pelo botão Atualizar
           </span>
 
         </footer>
@@ -2503,18 +1963,6 @@ type ResumoCardProps = {
   | "amber"
   | "purple";
 };
-
-function solicitarTroca(
-  aluno: I,
-  destino: H
-) {
-  console.log(
-    "Solicitar troca:",
-    aluno.nome,
-    "para",
-    destino.dia
-  );
-}
 
 function ResumoCard({
   titulo,
