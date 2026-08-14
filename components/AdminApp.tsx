@@ -2302,7 +2302,6 @@ export default function AdminApp() {
                               <th className="w-24 px-3 py-3 text-center font-semibold">
                                 Freq.
                               </th>
-
                             </tr>
 
                           </thead>
@@ -2361,10 +2360,8 @@ export default function AdminApp() {
 
                                         </div>
 
-                                        <strong className="whitespace-nowrap text-sm font-semibold text-slate-800">
-                                          {
-                                            aluno.nome
-                                          }
+                                        <strong className="whitespace-nowrap text-sm font-semibold uppercase text-slate-800">
+                                          {aluno.nome}
                                         </strong>
 
                                       </div>
@@ -2436,6 +2433,8 @@ export default function AdminApp() {
 
                                     </td>
 
+                                    {/* TROCA DE HORÁRIO */}
+
                                   </tr>
                                 );
                               }
@@ -2504,6 +2503,18 @@ type ResumoCardProps = {
   | "amber"
   | "purple";
 };
+
+function solicitarTroca(
+  aluno: I,
+  destino: H
+) {
+  console.log(
+    "Solicitar troca:",
+    aluno.nome,
+    "para",
+    destino.dia
+  );
+}
 
 function ResumoCard({
   titulo,

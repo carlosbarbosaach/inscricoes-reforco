@@ -564,21 +564,20 @@ export default function AdminApp() {
 
                     <td class="nome">
                       ${escapeHtml(
-                        aluno.nome
-                      )}
+                  aluno.nome
+                )}
                     </td>
 
                     ${colunas}
 
                     <td class="percentual">
-                      ${
-                        aulas.some(
-                          (status) =>
-                            status !== ""
-                        )
-                          ? `${frequencia}%`
-                          : "—"
-                      }
+                      ${aulas.some(
+                  (status) =>
+                    status !== ""
+                )
+                    ? `${frequencia}%`
+                    : "—"
+                  }
                     </td>
                   </tr>
                 `;
@@ -595,11 +594,10 @@ export default function AdminApp() {
 
               <span>
                 ${alunosDaTurma.length}
-                ${
-                  alunosDaTurma.length === 1
-                    ? " aluno"
-                    : " alunos"
-                }
+                ${alunosDaTurma.length === 1
+            ? " aluno"
+            : " alunos"
+          }
               </span>
             </div>
 
@@ -615,21 +613,21 @@ export default function AdminApp() {
                   </th>
 
                   ${Array.from(
-                    {
-                      length:
-                        TOTAL_AULAS,
-                    },
-                    (_, index) => `
+            {
+              length:
+                TOTAL_AULAS,
+            },
+            (_, index) => `
                       <th class="aula">
                         ${String(
-                          index + 1
-                        ).padStart(
-                          2,
-                          "0"
-                        )}
+              index + 1
+            ).padStart(
+              2,
+              "0"
+            )}
                       </th>
                     `
-                  ).join("")}
+          ).join("")}
 
                   <th class="percentual">
                     Freq.
@@ -855,12 +853,12 @@ export default function AdminApp() {
 
               <p>
                 ${escapeHtml(
-                  atual.dia
-                )}
+      atual.dia
+    )}
                 •
                 ${escapeHtml(
-                  atual.horario
-                )}
+      atual.horario
+    )}
                 • Frequência das 10 aulas
               </p>
             </div>
@@ -1727,7 +1725,7 @@ export default function AdminApp() {
                       <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
                         {alunosDaTurma.length}{" "}
                         {alunosDaTurma.length ===
-                        1
+                          1
                           ? "aluno"
                           : "alunos"}
                       </span>
@@ -1760,7 +1758,7 @@ export default function AdminApp() {
                                 >
                                   {String(
                                     index +
-                                      1
+                                    1
                                   ).padStart(
                                     2,
                                     "0"
@@ -1822,10 +1820,8 @@ export default function AdminApp() {
                                           .toUpperCase()}
                                       </div>
 
-                                      <strong className="whitespace-nowrap text-sm font-semibold text-slate-800">
-                                        {
-                                          aluno.nome
-                                        }
+                                      <strong className="whitespace-nowrap text-sm font-semibold uppercase text-slate-800">
+                                        {aluno.nome}
                                       </strong>
                                     </div>
                                   </td>
@@ -1850,15 +1846,14 @@ export default function AdminApp() {
                                             )
                                           }
                                           title={`Aula ${aulaIndex + 1}: clique para alterar a frequência`}
-                                          className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-extrabold transition ${
-                                            status ===
-                                            "P"
+                                          className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-extrabold transition ${status ===
+                                              "P"
                                               ? "border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                                               : status ===
-                                                  "F"
+                                                "F"
                                                 ? "border-red-200 bg-red-100 text-red-700 hover:bg-red-200"
                                                 : "border-slate-200 bg-white text-slate-300 hover:border-blue-300 hover:bg-blue-50"
-                                          }`}
+                                            }`}
                                         >
                                           {status ||
                                             "—"}
@@ -1869,17 +1864,16 @@ export default function AdminApp() {
 
                                   <td className="px-3 py-3 text-center">
                                     <span
-                                      className={`inline-flex min-w-[58px] justify-center rounded-full px-2.5 py-1 text-xs font-bold ${
-                                        !temRegistro
+                                      className={`inline-flex min-w-[58px] justify-center rounded-full px-2.5 py-1 text-xs font-bold ${!temRegistro
                                           ? "bg-slate-100 text-slate-400"
                                           : percentual >=
-                                              75
+                                            75
                                             ? "bg-emerald-100 text-emerald-700"
                                             : percentual >=
-                                                50
+                                              50
                                               ? "bg-amber-100 text-amber-700"
                                               : "bg-red-100 text-red-700"
-                                      }`}
+                                        }`}
                                     >
                                       {temRegistro
                                         ? `${percentual}%`
