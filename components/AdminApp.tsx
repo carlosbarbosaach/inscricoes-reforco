@@ -11,6 +11,7 @@ import {
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   LogOut,
   Printer,
@@ -50,6 +51,8 @@ const TURMAS = [
   "2EM B",
   "3EM A",
 ];
+
+
 
 export default function AdminApp() {
   const [senha, setSenha] = useState("");
@@ -490,6 +493,135 @@ export default function AdminApp() {
 
   const maiorQuantidade =
     maiorTurma?.total || 0;
+
+  const destaquesFrequencia =
+    inscricoes
+      .map((aluno) => {
+        const aulas =
+          frequenciaDoAluno(
+            aluno.id
+          );
+
+        const realizadas =
+          aulas.filter(
+            (status) =>
+              status !== ""
+          ).length;
+
+        const presencas =
+          aulas.filter(
+            (status) =>
+              status === "P"
+          ).length;
+
+        const percentual =
+          realizadas > 0
+            ? Math.round(
+              (
+                presencas /
+                realizadas
+              ) * 100
+            )
+            : 0;
+
+        return {
+          ...aluno,
+          realizadas,
+          presencas,
+          percentual,
+        };
+      })
+      .filter(
+        (aluno) =>
+          aluno.realizadas > 0
+      )
+      .sort(
+        (a, b) => {
+          if (
+            b.percentual !==
+            a.percentual
+          ) {
+            return (
+              b.percentual -
+              a.percentual
+            );
+          }
+
+          return (
+            b.presencas -
+            a.presencas
+          );
+        }
+      )
+    ;
+
+  /*
+   * MÉDIA GERAL DE FREQUÊNCIA
+   *
+   * Considera somente alunos que já possuem
+   * pelo menos uma aula com P ou F registrada.
+   */
+  const alunosComFrequencia =
+    inscricoes
+      .map((aluno) => {
+        const aulas =
+          frequenciaDoAluno(
+            aluno.id
+          );
+
+        const realizadas =
+          aulas.filter(
+            (status) =>
+              status !== ""
+          ).length;
+
+        const presencas =
+          aulas.filter(
+            (status) =>
+              status === "P"
+          ).length;
+
+        return {
+          realizadas,
+          presencas,
+        };
+      })
+      .filter(
+        (aluno) =>
+          aluno.realizadas > 0
+      );
+
+  const totalAulasRegistradas =
+    alunosComFrequencia.reduce(
+      (
+        total,
+        aluno
+      ) =>
+        total +
+        aluno.realizadas,
+      0
+    );
+
+  const totalPresencas =
+    alunosComFrequencia.reduce(
+      (
+        total,
+        aluno
+      ) =>
+        total +
+        aluno.presencas,
+      0
+    );
+
+  const mediaGeralFrequencia =
+    totalAulasRegistradas > 0
+      ? Math.round(
+        (
+          totalPresencas /
+          totalAulasRegistradas
+        ) * 100
+      )
+      : 0;
 
   function escapeHtml(
     valor: string
@@ -1135,9 +1267,7 @@ export default function AdminApp() {
             valor={totalVagas}
             descricao="Capacidade total"
             icon={
-              <Ticket
-                size={22}
-              />
+              <Ticket size={22} />
             }
             destaque="blue"
           />
@@ -1147,9 +1277,7 @@ export default function AdminApp() {
             valor={totalInscritos}
             descricao="Alunos confirmados"
             icon={
-              <UserRoundCheck
-                size={22}
-              />
+              <UserRoundCheck size={22} />
             }
             destaque="green"
           />
@@ -1159,9 +1287,7 @@ export default function AdminApp() {
             valor={totalDisponiveis}
             descricao="Vagas restantes"
             icon={
-              <Users
-                size={22}
-              />
+              <Users size={22} />
             }
             destaque="amber"
           />
@@ -1172,6 +1298,14 @@ export default function AdminApp() {
             vagas={totalVagas}
           />
 
+        </section>
+
+        {/* DESTAQUES DE FREQUÊNCIA */}
+        <section className="mt-4">
+          <DestaquesFrequencia
+            alunos={destaquesFrequencia}
+            mediaGeral={mediaGeralFrequencia}
+          />
         </section>
 
         {/* ANÁLISE POR TURMA */}
@@ -1377,7 +1511,7 @@ export default function AdminApp() {
                 Math.max(
                   0,
                   h.limite -
-                    inscritos
+                  inscritos
                 );
 
               const selecionado =
@@ -1386,14 +1520,14 @@ export default function AdminApp() {
               const percentual =
                 h.limite > 0
                   ? Math.min(
-                      100,
-                      Math.round(
-                        (
-                          inscritos /
-                          h.limite
-                        ) * 100
-                      )
+                    100,
+                    Math.round(
+                      (
+                        inscritos /
+                        h.limite
+                      ) * 100
                     )
+                  )
                   : 0;
 
               const status =
@@ -1867,12 +2001,12 @@ export default function AdminApp() {
                                           }
                                           title={`Aula ${aulaIndex + 1}: clique para alterar a frequência`}
                                           className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-extrabold transition ${status ===
-                                              "P"
-                                              ? "border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                                              : status ===
-                                                "F"
-                                                ? "border-red-200 bg-red-100 text-red-700 hover:bg-red-200"
-                                                : "border-slate-200 bg-white text-slate-300 hover:border-blue-300 hover:bg-blue-50"
+                                            "P"
+                                            ? "border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                                            : status ===
+                                              "F"
+                                              ? "border-red-200 bg-red-100 text-red-700 hover:bg-red-200"
+                                              : "border-slate-200 bg-white text-slate-300 hover:border-blue-300 hover:bg-blue-50"
                                             }`}
                                         >
                                           {status ||
@@ -1885,14 +2019,14 @@ export default function AdminApp() {
                                   <td className="px-3 py-3 text-center">
                                     <span
                                       className={`inline-flex min-w-[58px] justify-center rounded-full px-2.5 py-1 text-xs font-bold ${!temRegistro
-                                          ? "bg-slate-100 text-slate-400"
+                                        ? "bg-slate-100 text-slate-400"
+                                        : percentual >=
+                                          75
+                                          ? "bg-emerald-100 text-emerald-700"
                                           : percentual >=
-                                            75
-                                            ? "bg-emerald-100 text-emerald-700"
-                                            : percentual >=
-                                              50
-                                              ? "bg-amber-100 text-amber-700"
-                                              : "bg-red-100 text-red-700"
+                                            50
+                                            ? "bg-amber-100 text-amber-700"
+                                            : "bg-red-100 text-red-700"
                                         }`}
                                     >
                                       {temRegistro
@@ -2074,6 +2208,8 @@ function OcupacaoCard({
         tamanho="medio"
       />
 
+
+
     </article>
   );
 }
@@ -2150,5 +2286,661 @@ function CirculoPercentual({
       </div>
 
     </div>
+  );
+}
+
+/* ===========================================================
+   COMPONENTE - DESTAQUES DE FREQUÊNCIA
+=========================================================== */
+
+type DestaqueFrequencia = {
+  id: string;
+  nome: string;
+  turma: string;
+  horarioId: string;
+  realizadas: number;
+  presencas: number;
+  percentual: number;
+};
+
+type DestaquesFrequenciaProps = {
+  alunos: DestaqueFrequencia[];
+  mediaGeral: number;
+};
+
+function DestaquesFrequencia({
+  alunos,
+  mediaGeral,
+}: DestaquesFrequenciaProps) {
+  const [
+    mostrarTodos,
+    setMostrarTodos,
+  ] = useState(false);
+
+  /*
+   * No painel:
+   * - mostra 3 inicialmente
+   * - expande até 10
+   *
+   * Na impressão:
+   * - imprime TODOS
+   */
+  const alunosVisiveis =
+    mostrarTodos
+      ? alunos.slice(0, 10)
+      : alunos.slice(0, 3);
+
+  function escapeHtmlRanking(
+    valor: string
+  ) {
+    return valor
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
+  }
+
+  function imprimirRanking() {
+    if (
+      alunos.length === 0
+    ) {
+      return;
+    }
+
+    const janela =
+      window.open(
+        "",
+        "_blank",
+        "width=1000,height=800"
+      );
+
+    if (!janela) {
+      alert(
+        "Não foi possível abrir a impressão. Verifique se o navegador está bloqueando pop-ups."
+      );
+
+      return;
+    }
+
+    const linhas =
+      alunos
+        .map(
+          (
+            aluno,
+            index
+          ) => `
+            <tr>
+              <td class="posicao">
+                ${index + 1}º
+              </td>
+
+              <td class="nome">
+                ${escapeHtmlRanking(
+            aluno.nome.toUpperCase()
+          )}
+              </td>
+
+              <td class="turma">
+                ${escapeHtmlRanking(
+            aluno.turma
+          )}
+              </td>
+
+              <td class="numero">
+                ${aluno.presencas}
+              </td>
+
+              <td class="numero">
+                ${aluno.realizadas}
+              </td>
+
+              <td class="frequencia">
+                ${aluno.percentual}%
+              </td>
+            </tr>
+          `
+        )
+        .join("");
+
+    janela.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+
+        <head>
+
+          <meta charset="UTF-8" />
+
+          <title>
+            Ranking de Frequência - Reforço Escolar
+          </title>
+
+          <style>
+
+            @page {
+              size: A4 portrait;
+              margin: 12mm;
+            }
+
+            * {
+              box-sizing: border-box;
+            }
+
+            body {
+              margin: 0;
+              background: white;
+              color: #111827;
+              font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+            }
+
+            .cabecalho {
+              display: flex;
+              align-items: flex-end;
+              justify-content: space-between;
+              gap: 20px;
+              padding-bottom: 12px;
+              margin-bottom: 18px;
+              border-bottom:
+                2px solid #073763;
+            }
+
+            .cabecalho h1 {
+              margin: 0;
+              color: #073763;
+              font-size: 21px;
+            }
+
+            .cabecalho h2 {
+              margin: 4px 0 0;
+              font-size: 15px;
+            }
+
+            .cabecalho p {
+              margin: 5px 0 0;
+              color: #4b5563;
+              font-size: 11px;
+            }
+
+            .resumo {
+              min-width: 130px;
+              text-align: right;
+            }
+
+            .resumo span {
+              display: block;
+              color: #6b7280;
+              font-size: 9px;
+              font-weight: 700;
+              text-transform: uppercase;
+            }
+
+            .resumo strong {
+              display: block;
+              margin-top: 2px;
+              color: #073763;
+              font-size: 20px;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+
+            thead {
+              display:
+                table-header-group;
+            }
+
+            tr {
+              page-break-inside:
+                avoid;
+            }
+
+            th,
+            td {
+              padding: 7px 8px;
+              border:
+                1px solid #cbd5e1;
+              font-size: 10px;
+            }
+
+            th {
+              background: #f1f5f9;
+              color: #334155;
+              font-weight: 700;
+              text-align: left;
+              text-transform: uppercase;
+            }
+
+            tbody tr:nth-child(even) {
+              background: #f8fafc;
+            }
+
+            .posicao {
+              width: 55px;
+              color: #073763;
+              font-weight: 800;
+              text-align: center;
+            }
+
+            .nome {
+              font-weight: 700;
+            }
+
+            .turma {
+              width: 90px;
+              text-align: center;
+            }
+
+            .numero {
+              width: 80px;
+              text-align: center;
+            }
+
+            .frequencia {
+              width: 85px;
+              color: #073763;
+              font-size: 11px;
+              font-weight: 800;
+              text-align: center;
+            }
+
+            .rodape {
+              margin-top: 12px;
+              color: #64748b;
+              font-size: 9px;
+            }
+
+            @media print {
+              body {
+                -webkit-print-color-adjust:
+                  exact;
+                print-color-adjust:
+                  exact;
+              }
+            }
+
+          </style>
+
+        </head>
+
+        <body>
+
+          <div class="cabecalho">
+
+            <div>
+
+              <h1>
+                Colégio do Campeche
+              </h1>
+
+              <h2>
+                Reforço Escolar — Matemática Básica
+              </h2>
+
+              <p>
+                Ranking geral de frequência dos alunos
+              </p>
+
+            </div>
+
+            <div class="resumo">
+
+              <span>
+                Média geral
+              </span>
+
+              <strong>
+                ${mediaGeral}%
+              </strong>
+
+              <span style="margin-top:6px;">
+                Alunos no ranking
+              </span>
+
+              <strong>
+                ${alunos.length}
+              </strong>
+
+            </div>
+
+          </div>
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th style="text-align:center;">
+                  Posição
+                </th>
+
+                <th>
+                  Aluno
+                </th>
+
+                <th style="text-align:center;">
+                  Turma
+                </th>
+
+                <th style="text-align:center;">
+                  Presenças
+                </th>
+
+                <th style="text-align:center;">
+                  Aulas registradas
+                </th>
+
+                <th style="text-align:center;">
+                  Frequência
+                </th>
+
+              </tr>
+
+            </thead>
+
+            <tbody>
+              ${linhas}
+            </tbody>
+
+          </table>
+
+          <div class="rodape">
+            Relatório ordenado da maior para a menor frequência.
+          </div>
+
+        </body>
+
+      </html>
+    `);
+
+    janela.document.close();
+    janela.focus();
+
+    setTimeout(() => {
+      janela.print();
+    }, 300);
+  }
+
+  return (
+    <article className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+
+      {/* CABEÇALHO */}
+      <div className="border-b border-slate-100 px-5 py-5 md:px-7">
+
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+          <div>
+
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Frequência
+            </span>
+
+            <h2 className="mt-1 text-xl font-bold text-slate-900">
+              Destaques de frequência
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Alunos com maior participação nas aulas de reforço já realizadas.
+            </p>
+
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row">
+
+            {/* MÉDIA GERAL */}
+            <div className="flex min-w-[160px] items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#073763] shadow-sm">
+                <BarChart3
+                  size={19}
+                />
+              </div>
+
+              <div>
+
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Média geral
+                </span>
+
+                <strong className="mt-0.5 block text-xl font-extrabold text-[#073763]">
+                  {mediaGeral}%
+                </strong>
+
+              </div>
+
+            </div>
+
+            {/* IMPRIMIR */}
+            <button
+              type="button"
+              onClick={
+                imprimirRanking
+              }
+              disabled={
+                alunos.length === 0
+              }
+              className="inline-flex min-h-[64px] items-center justify-center gap-2 rounded-2xl bg-[#073763] px-5 text-sm font-bold text-white transition hover:bg-[#052b4e] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Printer
+                size={17}
+              />
+
+              Imprimir ranking
+
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* SEM FREQUÊNCIA REGISTRADA */}
+      {alunos.length === 0 ? (
+
+        <div className="px-6 py-10 text-center">
+
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+            <UserRoundCheck
+              size={22}
+            />
+          </div>
+
+          <strong className="mt-4 block text-sm font-semibold text-slate-700">
+            Frequência ainda não registrada
+          </strong>
+
+          <span className="mt-1 block text-sm text-slate-400">
+            Os destaques aparecerão após o lançamento das presenças.
+          </span>
+
+        </div>
+
+      ) : (
+
+        <>
+
+          {/* RANKING */}
+          <div
+            className={`grid gap-3 p-5 md:p-7 ${mostrarTodos
+                ? "md:grid-cols-2"
+                : "md:grid-cols-3"
+              }`}
+          >
+
+            {alunosVisiveis.map(
+              (
+                aluno,
+                index
+              ) => {
+
+                const posicao =
+                  index + 1;
+
+                const corPercentual =
+                  aluno.percentual >= 75
+                    ? "text-emerald-600"
+                    : aluno.percentual >= 50
+                      ? "text-amber-600"
+                      : "text-red-600";
+
+                const corBarra =
+                  aluno.percentual >= 75
+                    ? "bg-emerald-500"
+                    : aluno.percentual >= 50
+                      ? "bg-amber-500"
+                      : "bg-red-500";
+
+                return (
+                  <div
+                    key={
+                      aluno.id
+                    }
+                    className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+                  >
+
+                    {/* TOPO */}
+                    <div className="flex items-start justify-between gap-3">
+
+                      <div className="flex min-w-0 items-start gap-3">
+
+                        {/* POSIÇÃO SEM EMOJI */}
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-extrabold text-[#073763] shadow-sm">
+                          {posicao}º
+                        </span>
+
+                        <div className="min-w-0">
+
+                          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            {posicao}º lugar
+                          </span>
+
+                          <strong className="mt-0.5 block truncate text-sm font-bold uppercase text-slate-800">
+                            {
+                              aluno.nome
+                            }
+                          </strong>
+
+                          <span className="mt-1 inline-flex rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-bold text-[#073763]">
+                            {
+                              aluno.turma
+                            }
+                          </span>
+
+                        </div>
+
+                      </div>
+
+                      <strong
+                        className={`shrink-0 text-xl font-extrabold ${corPercentual}`}
+                      >
+                        {
+                          aluno.percentual
+                        }%
+                      </strong>
+
+                    </div>
+
+                    {/* PRESENÇAS */}
+                    <div className="mt-5 flex items-center justify-between">
+
+                      <span className="text-xs text-slate-500">
+                        Presenças registradas
+                      </span>
+
+                      <strong className="text-xs font-bold text-slate-700">
+                        {
+                          aluno.presencas
+                        }
+                        /
+                        {
+                          aluno.realizadas
+                        }
+                      </strong>
+
+                    </div>
+
+                    {/* BARRA */}
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${corBarra}`}
+                        style={{
+                          width:
+                            `${aluno.percentual}%`,
+                        }}
+                      />
+
+                    </div>
+
+                  </div>
+                );
+              }
+            )}
+
+          </div>
+
+          {/* CTA */}
+          {alunos.length > 3 && (
+            <div className="border-t border-slate-100 px-5 py-4 text-center md:px-7">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setMostrarTodos(
+                    (valor) =>
+                      !valor
+                  )
+                }
+                aria-expanded={
+                  mostrarTodos
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-5 py-2.5 text-sm font-bold text-[#073763] transition hover:border-blue-200 hover:bg-blue-100"
+              >
+                {mostrarTodos
+                  ? "Mostrar menos"
+                  : `Ver ranking completo (${Math.min(
+                    alunos.length,
+                    10
+                  )})`}
+
+                <ChevronDown
+                  size={17}
+                  className={`transition-transform duration-200 ${mostrarTodos
+                      ? "rotate-180"
+                      : ""
+                    }`}
+                />
+
+              </button>
+
+            </div>
+          )}
+
+        </>
+
+      )}
+
+    </article>
   );
 }
