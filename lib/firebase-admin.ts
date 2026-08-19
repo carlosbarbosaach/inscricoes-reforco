@@ -10,32 +10,48 @@ import {
   getFirestore,
 } from "firebase-admin/firestore";
 
-let firestore: Firestore | null = null;
+let firestore:
+  Firestore | null =
+  null;
 
-export function getAdminDb(): Firestore {
+export function getAdminDb():
+  Firestore {
+
   if (firestore) {
     return firestore;
   }
 
   const projectId =
-    process.env.FIREBASE_PROJECT_ID;
+    process.env
+      .FIREBASE_PROJECT_ID;
 
   const clientEmail =
-    process.env.FIREBASE_CLIENT_EMAIL;
+    process.env
+      .FIREBASE_CLIENT_EMAIL;
 
   const privateKey =
-    process.env.FIREBASE_PRIVATE_KEY?.replace(
-      /\\n/g,
-      "\n"
-    );
+    process.env
+      .FIREBASE_PRIVATE_KEY
+      ?.replace(
+        /\\n/g,
+        "\n"
+      );
 
-  if (
-    !projectId ||
-    !clientEmail ||
-    !privateKey
-  ) {
+  if (!projectId) {
     throw new Error(
-      "Firebase Admin: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL ou FIREBASE_PRIVATE_KEY não configurados."
+      "FIREBASE_PROJECT_ID não configurado."
+    );
+  }
+
+  if (!clientEmail) {
+    throw new Error(
+      "FIREBASE_CLIENT_EMAIL não configurado."
+    );
+  }
+
+  if (!privateKey) {
+    throw new Error(
+      "FIREBASE_PRIVATE_KEY não configurada."
     );
   }
 
@@ -50,7 +66,8 @@ export function getAdminDb(): Firestore {
           }),
         });
 
-  firestore = getFirestore(app);
+  firestore =
+    getFirestore(app);
 
   return firestore;
 }

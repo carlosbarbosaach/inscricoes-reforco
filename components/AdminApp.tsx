@@ -43,8 +43,6 @@ type StatusPresenca = "" | "P" | "F";
 type Frequencias = Record<string, StatusPresenca[]>;
 
 const TOTAL_AULAS = 10;
-const FREQUENCIA_STORAGE_KEY = "reforco-frequencias-v1";
-
 const TURMAS = [
   "1EM A",
   "2EM A",
@@ -68,6 +66,11 @@ export default function AdminApp() {
   const [frequencias, setFrequencias] =
     useState<Frequencias>({});
 
+  const [
+    salvandoFrequencia,
+    setSalvandoFrequencia,
+  ] = useState<Record<string, boolean>>({});
+
   const [filtro, setFiltro] =
     useState("");
 
@@ -78,7 +81,7 @@ export default function AdminApp() {
     useState("");
 
   const [carregando, setCarregando] =
-    useState(true);
+    useState(false);
 
   const [atualizando, setAtualizando] =
     useState(false);
@@ -87,37 +90,6 @@ export default function AdminApp() {
     ultimaAtualizacao,
     setUltimaAtualizacao,
   ] = useState<Date | null>(null);
-
-  useEffect(() => {
-    try {
-      const salvo = window.localStorage.getItem(
-        FREQUENCIA_STORAGE_KEY
-      );
-
-      if (salvo) {
-        setFrequencias(JSON.parse(salvo));
-      }
-    } catch (error) {
-      console.error(
-        "Erro ao carregar frequências:",
-        error
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        FREQUENCIA_STORAGE_KEY,
-        JSON.stringify(frequencias)
-      );
-    } catch (error) {
-      console.error(
-        "Erro ao salvar frequências:",
-        error
-      );
-    }
-  }, [frequencias]);
 
   function frequenciaDoAluno(
     alunoId: string
@@ -132,33 +104,156 @@ export default function AdminApp() {
     );
   }
 
-  function alternarPresenca(
+  async function alternarPresenca(
     alunoId: string,
     aulaIndex: number
   ) {
-    setFrequencias((estadoAtual) => {
-      const aulas = Array.from(
-        { length: TOTAL_AULAS },
-        (_, index) =>
-          estadoAtual[alunoId]?.[index] ||
-          ""
+    const chave =
+      `${alunoId}_${aulaIndex}`;
+
+    if (
+      salvandoFrequencia[
+      chave
+      ]
+    ) {
+      return;
+    }
+
+    const aulasAnteriores =
+      frequenciaDoAluno(
+        alunoId
       );
 
-      const statusAtual =
-        aulas[aulaIndex];
+    const statusAtual =
+      aulasAnteriores[
+      aulaIndex
+      ];
 
-      aulas[aulaIndex] =
-        statusAtual === ""
-          ? "P"
-          : statusAtual === "P"
-            ? "F"
-            : "";
+    const novoStatus:
+      StatusPresenca =
+      statusAtual === ""
+        ? "P"
+        : statusAtual === "P"
+          ? "F"
+          : "";
 
-      return {
+    const novasAulas =
+      [...aulasAnteriores];
+
+    novasAulas[
+      aulaIndex
+    ] =
+      novoStatus;
+
+    /*
+     * Atualização otimista:
+     * muda na tela imediatamente.
+     */
+    setFrequencias(
+      (estadoAtual) => ({
         ...estadoAtual,
-        [alunoId]: aulas,
-      };
-    });
+        [alunoId]:
+          novasAulas,
+      })
+    );
+
+    setSalvandoFrequencia(
+      (estadoAtual) => ({
+        ...estadoAtual,
+        [chave]: true,
+      })
+    );
+
+    setErro("");
+
+    try {
+      const response =
+        await fetch(
+          "/api/admin/frequencias",
+          {
+            method: "PATCH",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                alunoId,
+                aulaIndex,
+                status:
+                  novoStatus,
+              }),
+          }
+        );
+
+      const data =
+        await response
+          .json()
+          .catch(
+            () => null
+          );
+
+      if (
+        response.status ===
+        401
+      ) {
+        setLogado(false);
+
+        throw new Error(
+          "Sessão expirada. Entre novamente."
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+          "Não foi possível salvar a frequência."
+        );
+      }
+    } catch (error) {
+      /*
+       * Se falhar no Firebase,
+       * volta o valor anterior.
+       */
+      setFrequencias(
+        (estadoAtual) => ({
+          ...estadoAtual,
+          [alunoId]:
+            aulasAnteriores,
+        })
+      );
+
+      const mensagem =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar a frequência.";
+
+      setErro(
+        mensagem
+      );
+
+      console.error(
+        "Erro ao salvar frequência:",
+        error
+      );
+    } finally {
+      setSalvandoFrequencia(
+        (estadoAtual) => {
+          const novoEstado =
+          {
+            ...estadoAtual,
+          };
+
+          delete novoEstado[
+            chave
+          ];
+
+          return novoEstado;
+        }
+      );
+    }
   }
 
   function calcularFrequencia(
@@ -194,46 +289,103 @@ export default function AdminApp() {
         setAtualizando(true);
       }
 
-      const r = await fetch(
-        "/api/admin/inscricoes",
-        {
-          cache: "no-store",
-        }
-      );
+      const [
+        respostaInscricoes,
+        respostaFrequencias,
+      ] = await Promise.all([
+        fetch(
+          "/api/admin/inscricoes",
+          {
+            cache: "no-store",
+          }
+        ),
 
-      if (r.status === 401) {
+        fetch(
+          "/api/admin/frequencias",
+          {
+            cache: "no-store",
+          }
+        ),
+      ]);
+
+      const [
+        dadosInscricoes,
+        dadosFrequencias,
+      ] = await Promise.all([
+        respostaInscricoes
+          .json()
+          .catch(() => null),
+
+        respostaFrequencias
+          .json()
+          .catch(() => null),
+      ]);
+
+      if (
+        respostaInscricoes.status === 401 ||
+        respostaFrequencias.status === 401
+      ) {
         setLogado(false);
-        setCarregando(false);
-        return;
-      }
 
-      if (!r.ok) {
         throw new Error(
-          "Erro ao carregar inscrições."
+          "Sessão expirada. Entre novamente."
         );
       }
 
-      const j = await r.json();
+      if (!respostaInscricoes.ok) {
+        console.error(
+          "ERRO /api/admin/inscricoes:",
+          {
+            status:
+              respostaInscricoes.status,
+            dados:
+              dadosInscricoes,
+          }
+        );
+
+        throw new Error(
+          dadosInscricoes?.error ||
+            `Erro ao carregar inscrições. Status ${respostaInscricoes.status}`
+        );
+      }
+
+      if (!respostaFrequencias.ok) {
+        console.error(
+          "ERRO /api/admin/frequencias:",
+          {
+            status:
+              respostaFrequencias.status,
+            dados:
+              dadosFrequencias,
+          }
+        );
+
+        throw new Error(
+          dadosFrequencias?.error ||
+            `Erro ao carregar frequências. Status ${respostaFrequencias.status}`
+        );
+      }
 
       const novosHorarios =
-        Array.isArray(j.horarios)
-          ? j.horarios
+        Array.isArray(
+          dadosInscricoes?.horarios
+        )
+          ? dadosInscricoes.horarios
           : [];
 
       const novasInscricoes =
-        Array.isArray(j.inscricoes)
-          ? j.inscricoes
+        Array.isArray(
+          dadosInscricoes?.inscricoes
+        )
+          ? dadosInscricoes.inscricoes
           : [];
 
-      console.log(
-        "ADMIN - horários:",
-        novosHorarios.length
-      );
-
-      console.log(
-        "ADMIN - inscrições:",
-        novasInscricoes.length
-      );
+      const novasFrequencias =
+        dadosFrequencias?.frequencias &&
+        typeof dadosFrequencias.frequencias ===
+          "object"
+          ? dadosFrequencias.frequencias
+          : {};
 
       setHorarios(
         novosHorarios
@@ -241,6 +393,10 @@ export default function AdminApp() {
 
       setInscricoes(
         novasInscricoes
+      );
+
+      setFrequencias(
+        novasFrequencias
       );
 
       setLogado(true);
@@ -273,8 +429,13 @@ export default function AdminApp() {
         error
       );
 
+      const mensagem =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar os dados.";
+
       setErro(
-        "Não foi possível atualizar os dados."
+        mensagem
       );
     } finally {
       setCarregando(false);
@@ -282,9 +443,6 @@ export default function AdminApp() {
     }
   }
 
-  useEffect(() => {
-    carregar();
-  }, []);
 
   async function login(
     e: React.FormEvent
@@ -343,6 +501,12 @@ export default function AdminApp() {
     );
 
     setLogado(false);
+    setHorarios([]);
+    setInscricoes([]);
+    setFrequencias({});
+    setFiltro("");
+    setBusca("");
+    setErro("");
   }
 
   const atual = useMemo(
@@ -1999,8 +2163,15 @@ export default function AdminApp() {
                                               aulaIndex
                                             )
                                           }
+                                          disabled={
+                                            Boolean(
+                                              salvandoFrequencia[
+                                              `${aluno.id}_${aulaIndex}`
+                                              ]
+                                            )
+                                          }
                                           title={`Aula ${aulaIndex + 1}: clique para alterar a frequência`}
-                                          className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-extrabold transition ${status ===
+                                          className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-extrabold transition disabled:cursor-wait disabled:opacity-60 ${status ===
                                             "P"
                                             ? "border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                                             : status ===
